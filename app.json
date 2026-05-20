@@ -1,5 +1,22 @@
 {
-  "plugins": [
-    "expo-secure-store"
-  ]
+  "expo": {
+    "name": "dodamdodam",
+    "slug": "dodamdodam",
+    "version": "1.0.0",
+    "scheme": "dodamdodam",
+    "platforms": ["ios", "android"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.dodamdodam.app"
+    }
+  }
 }
