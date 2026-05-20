@@ -1,111 +1,112 @@
-import { supabase } from '../supabase'
+import { supabase } from '../supabase';
+import { Database } from '../database.types';
 
-// ─── 휴대폰 인증 ────────────────────────────────────────────
+// 자동생성 타입 활용
+export type Profile = Database['public']['Tables']['profiles']['Row'];
+export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 
-/** 휴대폰 번호로 OTP 발송 */
-export async function sendPhoneOtp(phone: string) {
-  const { error } = await supabase.auth.signInWithOtp({
-    phone,
-    options: { channel: 'sms' },
-  })
-  if (error) throw error
+// 회원가입 단계별 임시 저장용 타입
+export type RegisterData = {
+  phone_number?: string;
+  real_name?: string;
+  age?: number;
+  birth_date?: string;
+  village_id?: string;
+  nickname?: string;
+  email?: string;
+  password?: string;
+  avatar_color?: string;
+  avatar_type?: number;
+};
+
+// ── 로그인 ──────────────────────────────────────────────
+export async function signIn(email: string, password: string) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data;
 }
 
-/** OTP 코드 검증 */
-export async function verifyPhoneOtp(phone: string, token: string) {
-  const { data, error } = await supabase.auth.verifyOtp({
-    phone,
-    token,
-    type: 'sms',
-  })
-  if (error) throw error
-  return data
+// ── 로그아웃 ─────────────────────────────────────────────
+export async function signOut() {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
 }
 
-// ─── 회원가입 플로우 ─────────────────────────────────────────
-
-export interface RegisterPayload {
-  phone: string
-  password: string
-  age: number
-  villageId: string
-  nickname: string
-  avatarUrl?: string
+// ── 비밀번호 재설정 메일 발송 ────────────────────────────
+export async function sendPasswordResetEmail(email: string) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: 'yourapp://reset-password',
+  });
+  if (error) throw error;
 }
 
-/** 회원가입: auth 유저 생성 + profiles 삽입 */
-export async function register(payload: RegisterPayload) {
-  // 1) 이메일 없이 휴대폰+비밀번호로 가입
-  const { data: authData, error: signUpError } = await supabase.auth.signUp({
-    phone: payload.phone,
-    password: payload.password,
-  })
-  if (signUpError) throw signUpError
+// ── 비밀번호 변경 ────────────────────────────────────────
+export async function updatePassword(newPassword: string) {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+}
 
-  const userId = authData.user?.id
-  if (!userId) throw new Error('유저 생성 실패')
+// ── 회원가입 ─────────────────────────────────────────────
+export async function signUp(data: Required<RegisterData>) {
+  // 1. Auth 계정 생성
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email: data.email,
+    password: data.password,
+  });
+  if (authError) throw authError;
 
-  // 2) profiles 테이블에 상세 정보 삽입
-  const { error: profileError } = await supabase.from('profiles').insert({
+  const userId = authData.user?.id;
+  if (!userId) throw new Error('유저 ID를 가져올 수 없어요.');
+
+  // 2. profiles 테이블에 모든 정보 insert
+  const { error: profileError } = await supabase.from('profiles').upsert({
     id: userId,
-    age: payload.age,
-    village_id: payload.villageId,
-    nickname: payload.nickname,
-    avatar_url: payload.avatarUrl ?? null,
-  })
-  if (profileError) throw profileError
+    email: data.email,
+    username: data.email.split('@')[0], // 임시 username
+    phone_number: data.phone_number,
+    real_name: data.real_name,
+    age: data.age,
+    birth_date: data.birth_date,
+    village_id: data.village_id,
+    nickname: data.nickname,
+    avatar_color: data.avatar_color ?? '#A8C5A0',
+    avatar_type: data.avatar_type ?? 1,
+    login_username: data.email,
+    is_verified: true,
+    created_at: new Date().toISOString(),
+  } satisfies ProfileInsert);
+  if (profileError) throw profileError;
 
-  return authData
+  return authData;
 }
 
-// ─── 로그인 ──────────────────────────────────────────────────
-
-export async function login(phone: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    phone,
-    password,
-  })
-  if (error) throw error
-  return data
+// ── 닉네임 중복 체크 ──────────────────────────────────────
+export async function checkNickname(nickname: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('nickname', nickname)
+    .maybeSingle();
+  if (error) throw error;
+  return data === null; // true = 사용 가능
 }
 
-// ─── 로그아웃 ─────────────────────────────────────────────────
+// ── 현재 유저 프로필 조회 ────────────────────────────────
+export async function getMyProfile(): Promise<Profile | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
 
-export async function logout() {
-  const { error } = await supabase.auth.signOut()
-  if (error) throw error
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+  if (error) throw error;
+  return data;
 }
 
-// ─── 비밀번호 재설정 ──────────────────────────────────────────
-
-/** 비밀번호 재설정용 OTP 발송 */
-export async function sendResetOtp(phone: string) {
-  const { error } = await supabase.auth.signInWithOtp({
-    phone,
-    options: { channel: 'sms' },
-  })
-  if (error) throw error
-}
-
-/** OTP 확인 후 새 비밀번호 설정 */
-export async function resetPassword(newPassword: string) {
-  const { data, error } = await supabase.auth.updateUser({
-    password: newPassword,
-  })
-  if (error) throw error
-  return data
-}
-
-// ─── 세션/유저 조회 ───────────────────────────────────────────
-
+// ── 세션 조회 ─────────────────────────────────────────────
 export async function getSession() {
-  const { data, error } = await supabase.auth.getSession()
-  if (error) throw error
-  return data.session
-}
-
-export async function getCurrentUser() {
-  const { data, error } = await supabase.auth.getUser()
-  if (error) throw error
-  return data.user
+  const { data: { session } } = await supabase.auth.getSession();
+  return session;
 }
