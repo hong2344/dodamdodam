@@ -1,6 +1,3 @@
-아래 코드 붙여넣고 **Ctrl+S** 저장하세요:
-
-```tsx
 import { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
@@ -100,4 +97,3 @@ const styles = StyleSheet.create({
   letterPreview: { fontSize: 14, color: '#555', lineHeight: 20 },
   letterDate: { fontSize: 12, color: '#aaa' },
 });
-```
