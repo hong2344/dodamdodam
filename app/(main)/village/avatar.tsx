@@ -69,14 +69,12 @@ export default function AvatarScreen() {
       </TouchableOpacity>
       <Text style={styles.title}>캐릭터 선택</Text>
 
-      {/* 선택된 캐릭터 미리보기 */}
       <View style={styles.previewBox}>
         <Image source={selectedChar?.image} style={styles.previewImage} />
         <Text style={styles.previewName}>{selectedChar?.name}</Text>
         <Text style={styles.nickname}>{profile?.nickname}</Text>
       </View>
 
-      {/* 캐릭터 선택 그리드 */}
       <Text style={styles.sectionTitle}>캐릭터 선택</Text>
       <View style={styles.grid}>
         {CHARACTERS.map((char) => (
@@ -94,4 +92,28 @@ export default function AvatarScreen() {
       </View>
 
       <TouchableOpacity
-        style={
+        style={[styles.button, saving && styles.buttonDisabled]}
+        onPress={handleSave}
+        disabled={saving}
+      >
+        <Text style={styles.buttonText}>{saving ? '저장 중...' : '선택 완료'}</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#FDFAF6' },
+  inner: { padding: 24, paddingTop: 60, gap: 20 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  back: { marginBottom: 4 },
+  backText: { fontSize: 22, color: '#4A7C59' },
+  title: { fontSize: 24, fontWeight: '700', color: '#2C2C2C' },
+  previewBox: { alignItems: 'center', gap: 8, paddingVertical: 16, backgroundColor: '#F0F7F2', borderRadius: 16 },
+  previewImage: { width: 120, height: 120, borderRadius: 60 },
+  previewName: { fontSize: 18, fontWeight: '700', color: '#2C2C2C' },
+  nickname: { fontSize: 14, color: '#888' },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#2C2C2C' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  charCard: {
+    w
