@@ -1,51 +1,14 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Alert, ScrollView, ActivityIndicator,
+  ScrollView, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { signUp } from '../../../lib/api/auth';
 import { useRegister } from './_context';
 import StepHeader from './_components/StepHeader';
-
-const CATEGORIES = [
-  {
-    id: 'career',
-    name: '진로',
-    emoji: '🌱',
-    desc: '미래, 꿈, 진학 고민',
-  },
-  {
-    id: 'grades',
-    name: '성적',
-    emoji: '📖',
-    desc: '공부, 시험, 학업 스트레스',
-  },
-  {
-    id: 'relationship',
-    name: '인간관계',
-    emoji: '🤝',
-    desc: '친구, 가족, 선생님과의 관계',
-  },
-  {
-    id: 'romance',
-    name: '연애',
-    emoji: '💌',
-    desc: '설렘, 짝사랑, 이별',
-  },
-  {
-    id: 'appearance',
-    name: '외모',
-    emoji: '✨',
-    desc: '외모, 자기관리, 패션',
-  },
-  {
-    id: 'melancholy',
-    name: '멜랑콜리',
-    emoji: '🌙',
-    desc: '불안, 우울, 정체성, 혼란',
-  },
-];
+import { CATEGORIES } from '../../../lib/appData';
+import { notify } from '../../../lib/ui';
 
 export default function InterestScreen() {
   const router = useRouter();
@@ -55,9 +18,10 @@ export default function InterestScreen() {
 
   async function handleComplete() {
     if (!selected) {
-      Alert.alert('알림', '관심사를 선택해주세요.');
+      notify('알림', '관심사를 선택해주세요.');
       return;
     }
+
     update({ match_category: selected });
 
     try {
@@ -71,13 +35,11 @@ export default function InterestScreen() {
         match_category: selected,
       });
       reset();
-      Alert.alert(
-        '가입 완료!',
-        '이메일 인증 후 로그인해주세요.',
-        [{ text: '확인', onPress: () => router.replace('/(auth)/login') }],
-      );
+      notify('가입 완료!', '이메일 인증 후 로그인해주세요.', [
+        { text: '확인', onPress: () => router.replace('/(auth)/login') },
+      ]);
     } catch (e: any) {
-      Alert.alert('가입 실패', e.message ?? '다시 시도해주세요.');
+      notify('가입 실패', e.message ?? '다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
@@ -90,7 +52,7 @@ export default function InterestScreen() {
       <View style={styles.inner}>
         <Text style={styles.desc}>
           어떤 이야기를 나누고 싶으세요?{'\n'}
-          비슷한 고민을 가진 친구와 편지를 나눠드려요.
+          비슷한 고민을 가진 친구와 편지를 나눌 수 있어요.
         </Text>
 
         <View style={styles.grid}>
@@ -107,7 +69,7 @@ export default function InterestScreen() {
               <Text style={[styles.catDesc, selected === cat.id && styles.catDescSelected]}>
                 {cat.desc}
               </Text>
-              {selected === cat.id && <Text style={styles.check}>✓</Text>}
+              {selected === cat.id && <Text style={styles.check}>선택됨</Text>}
             </TouchableOpacity>
           ))}
         </View>
@@ -129,11 +91,19 @@ export default function InterestScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFAF6' },
   content: { paddingBottom: 40 },
-  inner: { paddingHorizontal: 24, paddingTop: 8, gap: 16 },
+  inner: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    gap: 16,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+  },
   desc: { fontSize: 15, color: '#666', lineHeight: 24, marginBottom: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   card: {
     width: '47%',
+    minWidth: 160,
     backgroundColor: '#fff',
     borderRadius: 16,
     padding: 18,
@@ -148,9 +118,9 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 32, marginBottom: 4 },
   name: { fontSize: 16, fontWeight: '700', color: '#2C2C2C' },
   nameSelected: { color: '#4A7C59' },
-  catDesc: { fontSize: 11, color: '#aaa', lineHeight: 16 },
-  catDescSelected: { color: '#6BA882' },
-  check: { fontSize: 14, color: '#4A7C59', fontWeight: '700', marginTop: 4 },
+  catDesc: { fontSize: 11, color: '#777', lineHeight: 16 },
+  catDescSelected: { color: '#4A7C59' },
+  check: { fontSize: 12, color: '#4A7C59', fontWeight: '700', marginTop: 4 },
   button: {
     backgroundColor: '#4A7C59',
     borderRadius: 12,

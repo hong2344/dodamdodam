@@ -1,29 +1,27 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-
-const { width } = Dimensions.get('window');
 
 const SLIDES = [
   {
-    emoji: '🏘',
-    title: '마을에 오신 걸 환영해요',
-    desc: '익명의 이웃과 편지를 주고받는\n따뜻한 마을이에요.',
+    emoji: '🏡',
+    title: '도담도담 마을에 오신 걸 환영해요',
+    desc: '익명으로 마음을 나누고 편지를 주고받는 따뜻한 마을이에요.',
   },
   {
-    emoji: '✉️',
+    emoji: '💌',
     title: '매칭되면 편지가 시작돼요',
-    desc: '매칭된 상대에게 마음을 담은\n편지를 써보세요.',
+    desc: '매칭된 친구에게 마음을 담아 편지를 보내보세요.',
   },
   {
-    emoji: '📬',
+    emoji: '📮',
     title: '편지는 시간이 걸려요',
-    desc: '발송 → 배달중 → 도착\n실제 편지처럼 기다리는 설렘을 느껴보세요.',
+    desc: '발송 후 배달 중인 편지를 기다리는 설렘을 느껴보세요.',
   },
   {
-    emoji: '🎁',
+    emoji: '🛍️',
     title: '포인트로 꾸며요',
-    desc: '편지를 주고받으면 포인트를 얻어\n아바타와 편지지를 꾸밀 수 있어요.',
+    desc: '편지를 주고받으며 포인트를 모아 아바타와 편지지를 꾸밀 수 있어요.',
   },
 ];
 
@@ -69,9 +67,16 @@ export default function TutorialScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FDFAF6', paddingHorizontal: 32 },
+  container: {
+    flex: 1,
+    backgroundColor: '#FDFAF6',
+    paddingHorizontal: 32,
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
+  },
   skip: { paddingTop: 60, alignItems: 'flex-end' },
-  skipText: { color: '#aaa', fontSize: 14 },
+  skipText: { color: '#888', fontSize: 14 },
   slide: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16 },
   emoji: { fontSize: 80 },
   title: { fontSize: 24, fontWeight: '700', color: '#2C2C2C', textAlign: 'center' },

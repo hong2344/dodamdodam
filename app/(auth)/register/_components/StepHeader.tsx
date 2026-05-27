@@ -13,17 +13,19 @@ export default function StepHeader({ step, total, title }: Props) {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-        <Text style={styles.backText}>←</Text>
-      </TouchableOpacity>
+      <View style={styles.inner}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+          <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
 
-      <View style={styles.progressBg}>
-        <View style={[styles.progressFill, { flex: progress }]} />
-        <View style={{ flex: 1 - progress }} />
+        <View style={styles.progressBg}>
+          <View style={[styles.progressFill, { flex: progress }]} />
+          <View style={{ flex: 1 - progress }} />
+        </View>
+
+        <Text style={styles.stepText}>{step} / {total}</Text>
+        <Text style={styles.title}>{title}</Text>
       </View>
-
-      <Text style={styles.stepText}>{step} / {total}</Text>
-      <Text style={styles.title}>{title}</Text>
     </View>
   );
 }
@@ -34,6 +36,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 16,
     backgroundColor: '#FDFAF6',
+  },
+  inner: {
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
   },
   back: { marginBottom: 16 },
   backText: { fontSize: 22, color: '#4A7C59' },

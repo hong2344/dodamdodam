@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Alert, KeyboardAvoidingView, Platform,
+  StyleSheet, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRegister } from './_context';
 import StepHeader from './_components/StepHeader';
+import { notify } from '../../../lib/ui';
 
 export default function AccountScreen() {
   const router = useRouter();
@@ -17,19 +18,19 @@ export default function AccountScreen() {
 
   function handleNext() {
     if (!email.trim()) {
-      Alert.alert('알림', '이메일을 입력해주세요.');
+      notify('알림', '이메일을 입력해주세요.');
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      Alert.alert('알림', '올바른 이메일 형식이 아니에요.');
+      notify('알림', '올바른 이메일 형식이 아니에요.');
       return;
     }
     if (password.length < 8) {
-      Alert.alert('알림', '비밀번호는 8자 이상이어야 해요.');
+      notify('알림', '비밀번호는 8자 이상이어야 해요.');
       return;
     }
     if (password !== passwordConfirm) {
-      Alert.alert('알림', '비밀번호가 일치하지 않아요.');
+      notify('알림', '비밀번호가 일치하지 않아요.');
       return;
     }
 
@@ -42,10 +43,12 @@ export default function AccountScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <StepHeader step={1} total={2} title="아이디 · 비밀번호 설정" />
+      <StepHeader step={1} total={3} title="아이디 · 비밀번호 설정" />
 
       <View style={styles.inner}>
-        <Text style={styles.desc}>로그인에 사용할{'\n'}이메일과 비밀번호를 설정해주세요.</Text>
+        <Text style={styles.desc}>
+          로그인에 사용할 이메일과 비밀번호를 설정해주세요.
+        </Text>
 
         <TextInput
           style={styles.input}
@@ -83,7 +86,15 @@ export default function AccountScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFAF6' },
-  inner: { flex: 1, paddingHorizontal: 32, paddingTop: 32, gap: 12 },
+  inner: {
+    flex: 1,
+    paddingHorizontal: 32,
+    paddingTop: 32,
+    gap: 12,
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
+  },
   desc: { fontSize: 15, color: '#666', lineHeight: 22, marginBottom: 8 },
   input: {
     backgroundColor: '#fff',

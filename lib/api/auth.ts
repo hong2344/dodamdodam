@@ -1,11 +1,10 @@
+import * as Linking from 'expo-linking';
 import { supabase } from '../supabase';
 import { Database } from '../database.types';
 
-// 자동생성 타입 활용
 export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 
-// 회원가입 단계별 임시 저장용 타입
 export type RegisterData = {
   phone_number?: string;
   real_name?: string;
@@ -19,34 +18,29 @@ export type RegisterData = {
   avatar_type?: number;
 };
 
-// ── 로그인 ──────────────────────────────────────────────
 export async function signIn(email: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return data;
 }
 
-// ── 로그아웃 ─────────────────────────────────────────────
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
 
-// ── 비밀번호 재설정 메일 발송 ────────────────────────────
 export async function sendPasswordResetEmail(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: 'yourapp://reset-password',
+    redirectTo: Linking.createURL('/reset-password'),
   });
   if (error) throw error;
 }
 
-// ── 비밀번호 변경 ────────────────────────────────────────
 export async function updatePassword(newPassword: string) {
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) throw error;
 }
 
-// ── 회원가입 ─────────────────────────────────────────────
 type SignUpInput = {
   email: string;
   password: string;
@@ -64,7 +58,7 @@ export async function signUp(data: SignUpInput) {
   if (authError) throw authError;
 
   const userId = authData.user?.id;
-  if (!userId) throw new Error('유저 ID를 가져올 수 없어요.');
+  if (!userId) throw new Error('사용자 ID를 가져올 수 없어요.');
 
   const { error: profileError } = await supabase.from('profiles').upsert({
     id: userId,
@@ -85,7 +79,6 @@ export async function signUp(data: SignUpInput) {
   return authData;
 }
 
-// ── 닉네임 중복 체크 ──────────────────────────────────────
 export async function checkNickname(nickname: string): Promise<boolean> {
   const { data, error } = await supabase
     .from('profiles')
@@ -93,10 +86,9 @@ export async function checkNickname(nickname: string): Promise<boolean> {
     .eq('nickname', nickname)
     .maybeSingle();
   if (error) throw error;
-  return data === null; // true = 사용 가능
+  return data === null;
 }
 
-// ── 현재 유저 프로필 조회 ────────────────────────────────
 export async function getMyProfile(): Promise<Profile | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -110,7 +102,6 @@ export async function getMyProfile(): Promise<Profile | null> {
   return data;
 }
 
-// ── 세션 조회 ─────────────────────────────────────────────
 export async function getSession() {
   const { data: { session } } = await supabase.auth.getSession();
   return session;
