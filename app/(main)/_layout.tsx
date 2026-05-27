@@ -37,6 +37,7 @@ export default function MainLayout() {
       />
       <Tabs.Screen name="tutorial" options={{ href: null }} />
       <Tabs.Screen name="village/avatar" options={{ href: null }} />
+      <Tabs.Screen name="village/category" options={{ href: null }} />
       <Tabs.Screen name="matching/letter/inbox" options={{ href: null }} />
       <Tabs.Screen name="matching/letter/write" options={{ href: null }} />
       <Tabs.Screen name="matching/letter/status" options={{ href: null }} />

@@ -47,8 +47,16 @@ export async function updatePassword(newPassword: string) {
 }
 
 // ── 회원가입 ─────────────────────────────────────────────
-export async function signUp(data: Required<RegisterData>) {
-  // 1. Auth 계정 생성
+type SignUpInput = {
+  email: string;
+  password: string;
+  birth_date: string;
+  age: number;
+  nickname: string;
+  match_category?: string;
+};
+
+export async function signUp(data: SignUpInput) {
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email: data.email,
     password: data.password,
@@ -58,20 +66,17 @@ export async function signUp(data: Required<RegisterData>) {
   const userId = authData.user?.id;
   if (!userId) throw new Error('유저 ID를 가져올 수 없어요.');
 
-  // 2. profiles 테이블에 모든 정보 insert
   const { error: profileError } = await supabase.from('profiles').upsert({
     id: userId,
     email: data.email,
-    username: data.email.split('@')[0], // 임시 username
-    phone_number: data.phone_number,
-    real_name: data.real_name,
+    username: data.email.split('@')[0],
+    login_username: data.email,
+    nickname: data.nickname,
     age: data.age,
     birth_date: data.birth_date,
-    village_id: data.village_id,
-    nickname: data.nickname,
-    avatar_color: data.avatar_color ?? '#A8C5A0',
-    avatar_type: data.avatar_type ?? 1,
-    login_username: data.email,
+    match_category: data.match_category ?? null,
+    avatar_color: '#A8C5A0',
+    avatar_type: 1,
     is_verified: true,
     created_at: new Date().toISOString(),
   } satisfies ProfileInsert);

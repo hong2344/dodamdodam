@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      interest_categories: {
+        Row: {
+          id: string
+          name: string
+          emoji: string
+          sort_order: number | null
+        }
+        Insert: {
+          id: string
+          name: string
+          emoji: string
+          sort_order?: number | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          emoji?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       blocked_users: {
         Row: {
           blocked_user_id: string | null
@@ -321,6 +342,7 @@ export type Database = {
           verification_ci: string | null
           verification_id: string | null
           village_id: string | null
+          match_category: string | null
         }
         Insert: {
           age?: number | null
@@ -350,6 +372,7 @@ export type Database = {
           verification_ci?: string | null
           verification_id?: string | null
           village_id?: string | null
+          match_category?: string | null
         }
         Update: {
           age?: number | null
@@ -379,6 +402,7 @@ export type Database = {
           verification_ci?: string | null
           verification_id?: string | null
           village_id?: string | null
+          match_category?: string | null
         }
         Relationships: [
           {

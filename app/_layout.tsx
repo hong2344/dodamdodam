@@ -29,7 +29,7 @@ export default function RootLayout() {
     const inAuth = segments[0] === '(auth)'
 
     if (!session && !inAuth) router.replace('/(auth)/login')
-    if (session && inAuth) router.replace('/(main)')
+    if (session && inAuth) router.replace('/(main)/village')
   }, [session, isLoading])
 
   return <Slot />

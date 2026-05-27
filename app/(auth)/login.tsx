@@ -112,7 +112,7 @@ export default function LoginScreen() {
 
         <TouchableOpacity
           style={styles.registerButton}
-          onPress={() => router.push('/(auth)/register/phone')}
+          onPress={() => router.push('/(auth)/register/account')}
         >
           <Text style={styles.registerText}>처음이신가요? <Text style={styles.registerAccent}>회원가입</Text></Text>
         </TouchableOpacity>

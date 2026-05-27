@@ -1,16 +1,12 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 
 export type RegisterData = {
-  phone_number?: string;
-  real_name?: string;
-  age?: number;
-  birth_date?: string;
-  village_id?: string;
-  nickname?: string;
   email?: string;
   password?: string;
-  avatar_color?: string;
-  avatar_type?: number;
+  birth_date?: string;
+  age?: number;
+  nickname?: string;
+  match_category?: string;
 };
 
 type RegisterContextType = {
