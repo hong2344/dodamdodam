@@ -11,28 +11,28 @@ export default function MainLayout() {
           borderTopColor: '#F0F0F0',
         },
         tabBarActiveTintColor: '#4A7C59',
-        tabBarInactiveTintColor: '#aaa',
+        tabBarInactiveTintColor: '#888',
       }}
     >
       <Tabs.Screen
         name="village/index"
         options={{
           title: '마을',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏘</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏡</Text>,
         }}
       />
       <Tabs.Screen
         name="matching/index"
         options={{
           title: '매칭',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>✉️</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💌</Text>,
         }}
       />
       <Tabs.Screen
         name="shop/index"
         options={{
           title: '포인트샵',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🛍</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🛍️</Text>,
         }}
       />
       <Tabs.Screen name="tutorial" options={{ href: null }} />

@@ -1,17 +1,10 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../../lib/supabase';
 import { getMyProfile } from '../../../lib/api/auth';
-
-const CATEGORIES = [
-  { id: 'career',       name: '진로',     emoji: '🌱', desc: '미래, 꿈, 진학 고민' },
-  { id: 'grades',       name: '성적',     emoji: '📖', desc: '공부, 시험, 학업 스트레스' },
-  { id: 'relationship', name: '인간관계', emoji: '🤝', desc: '친구, 가족, 선생님과의 관계' },
-  { id: 'romance',      name: '연애',     emoji: '💌', desc: '설렘, 짝사랑, 이별' },
-  { id: 'appearance',   name: '외모',     emoji: '✨', desc: '외모, 자기관리, 패션' },
-  { id: 'melancholy',   name: '멜랑콜리', emoji: '🌙', desc: '불안, 우울, 정체성, 혼란' },
-];
+import { CATEGORIES } from '../../../lib/appData';
+import { notify } from '../../../lib/ui';
 
 export default function CategoryScreen() {
   const router = useRouter();
@@ -33,12 +26,16 @@ export default function CategoryScreen() {
 
   async function handleSave() {
     if (!selected) {
-      Alert.alert('관심사를 선택해주세요');
+      notify('알림', '관심사를 선택해주세요.');
       return;
     }
+
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSaving(false); return; }
+    if (!user) {
+      setSaving(false);
+      return;
+    }
 
     const { error } = await supabase
       .from('profiles')
@@ -47,15 +44,15 @@ export default function CategoryScreen() {
 
     setSaving(false);
     if (error) {
-      Alert.alert('저장 실패', error.message);
+      notify('저장 실패', error.message);
       return;
     }
-    Alert.alert('저장됐어요!', '이번 주 관심사가 설정됐어요.', [
+    notify('저장됐어요!', '이번 주 관심사가 설정됐어요.', [
       { text: '확인', onPress: () => router.back() },
     ]);
   }
 
-  const previousCat = CATEGORIES.find(c => c.id === previous);
+  const previousCat = CATEGORIES.find((category) => category.id === previous);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -86,7 +83,7 @@ export default function CategoryScreen() {
             <Text style={[styles.desc, selected === cat.id && styles.descSelected]}>
               {cat.desc}
             </Text>
-            {selected === cat.id && <Text style={styles.check}>✓</Text>}
+            {selected === cat.id && <Text style={styles.check}>선택됨</Text>}
           </TouchableOpacity>
         ))}
       </View>
@@ -104,7 +101,14 @@ export default function CategoryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFAF6' },
-  content: { padding: 24, paddingTop: 60, paddingBottom: 40 },
+  content: {
+    padding: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+  },
   title: { fontSize: 24, fontWeight: '700', color: '#2C2C2C', marginBottom: 10 },
   subtitle: { fontSize: 14, color: '#666', lineHeight: 22, marginBottom: 20 },
   prevBox: {
@@ -117,6 +121,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 32 },
   card: {
     width: '47%',
+    minWidth: 160,
     backgroundColor: '#fff',
     borderRadius: 16,
     padding: 18,
@@ -128,9 +133,9 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 32, marginBottom: 4 },
   name: { fontSize: 16, fontWeight: '700', color: '#2C2C2C' },
   nameSelected: { color: '#4A7C59' },
-  desc: { fontSize: 11, color: '#aaa', lineHeight: 16 },
-  descSelected: { color: '#6BA882' },
-  check: { fontSize: 14, color: '#4A7C59', fontWeight: '700', marginTop: 4 },
+  desc: { fontSize: 11, color: '#777', lineHeight: 16 },
+  descSelected: { color: '#4A7C59' },
+  check: { fontSize: 12, color: '#4A7C59', fontWeight: '700', marginTop: 4 },
   button: {
     backgroundColor: '#4A7C59',
     borderRadius: 14,

@@ -1,44 +1,45 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Alert, KeyboardAvoidingView, Platform,
+  StyleSheet, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRegister } from './_context';
 import StepHeader from './_components/StepHeader';
+import { notify } from '../../../lib/ui';
 
 export default function AgeScreen() {
   const router = useRouter();
-  const { data, update, reset } = useRegister();
+  const { update } = useRegister();
 
   const [birthDate, setBirthDate] = useState('');
   const [nickname, setNickname] = useState('');
+
   function calcAge(yyyymmdd: string): number {
     const today = new Date();
     const y = parseInt(yyyymmdd.slice(0, 4), 10);
     const m = parseInt(yyyymmdd.slice(4, 6), 10) - 1;
     const d = parseInt(yyyymmdd.slice(6, 8), 10);
     let age = today.getFullYear() - y;
-    if (
-      today.getMonth() < m ||
-      (today.getMonth() === m && today.getDate() < d)
-    ) age--;
+    if (today.getMonth() < m || (today.getMonth() === m && today.getDate() < d)) {
+      age--;
+    }
     return age;
   }
 
   function handleNext() {
     const cleaned = birthDate.replace(/\D/g, '');
     if (cleaned.length !== 8) {
-      Alert.alert('알림', '생년월일 8자리를 입력해주세요. (예: 19990101)');
+      notify('알림', '생년월일 8자리를 입력해주세요. (예: 19990101)');
       return;
     }
     if (!nickname.trim()) {
-      Alert.alert('알림', '닉네임을 입력해주세요.');
+      notify('알림', '닉네임을 입력해주세요.');
       return;
     }
     const age = calcAge(cleaned);
     if (age < 14) {
-      Alert.alert('알림', '만 14세 이상만 가입할 수 있어요.');
+      notify('알림', '만 14세 이상만 가입할 수 있어요.');
       return;
     }
     const isoDate = `${cleaned.slice(0, 4)}-${cleaned.slice(4, 6)}-${cleaned.slice(6, 8)}`;
@@ -84,7 +85,15 @@ export default function AgeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFAF6' },
-  inner: { flex: 1, paddingHorizontal: 32, paddingTop: 32, gap: 12 },
+  inner: {
+    flex: 1,
+    paddingHorizontal: 32,
+    paddingTop: 32,
+    gap: 12,
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
+  },
   desc: { fontSize: 15, color: '#666', lineHeight: 22, marginBottom: 8 },
   input: {
     backgroundColor: '#fff',
@@ -103,6 +112,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  buttonDisabled: { opacity: 0.6 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });

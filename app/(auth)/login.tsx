@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { signIn } from '../../lib/api/auth';
 import { supabase } from '../../lib/supabase';
+import { notify } from '../../lib/ui';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -16,15 +17,15 @@ export default function LoginScreen() {
 
   async function handleLogin() {
     if (!email || !password) {
-      Alert.alert('알림', '이메일과 비밀번호를 입력해주세요.');
+      notify('알림', '이메일과 비밀번호를 입력해주세요.');
       return;
     }
+
     try {
       setLoading(true);
       await signIn(email.trim(), password);
       router.replace('/(main)/village');
     } catch (e: any) {
-      // 실패 횟수 DB에 기록
       const { data } = await supabase.rpc('record_login_failure', {
         p_username: email.trim(),
       });
@@ -33,15 +34,13 @@ export default function LoginScreen() {
       setFailCount(newCount);
 
       if (newCount >= 5) {
-        Alert.alert(
-          '로그인 5회 실패',
-          '비밀번호 재설정이 필요해요.',
-          [{ text: '비밀번호 재설정', onPress: () => router.push('/(auth)/reset-password') }]
-        );
+        notify('로그인 5회 실패', '비밀번호 재설정이 필요해요.', [
+          { text: '비밀번호 재설정', onPress: () => router.push('/(auth)/reset-password') },
+        ]);
       } else {
-        Alert.alert(
+        notify(
           '로그인 실패',
-          `아이디나 비밀번호를 확인해주세요.\n(${newCount}회 실패 / 5회 초과 시 재설정 필요)`
+          `아이디나 비밀번호를 확인해주세요.\n(${newCount}회 실패 / 5회 초과 시 재설정 필요)`,
         );
       }
     } finally {
@@ -55,7 +54,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.inner}>
-        <Text style={styles.title}>편지 마을</Text>
+        <Text style={styles.title}>도담도담</Text>
         <Text style={styles.subtitle}>익명으로 마음을 전해보세요</Text>
 
         <TextInput
@@ -76,14 +75,13 @@ export default function LoginScreen() {
           secureTextEntry
         />
 
-        {/* 실패 횟수 표시 */}
         {failCount > 0 && (
           <View style={styles.failBox}>
             <Text style={styles.failText}>
-              {failCount}회 실패 · 5회 초과 시 비밀번호 재설정 필요
+              {failCount}회 실패 · 5회 초과 시 비밀번호 재설정이 필요해요
             </Text>
             <View style={styles.failBar}>
-              {[1,2,3,4,5].map((i) => (
+              {[1, 2, 3, 4, 5].map((i) => (
                 <View
                   key={i}
                   style={[
@@ -114,7 +112,9 @@ export default function LoginScreen() {
           style={styles.registerButton}
           onPress={() => router.push('/(auth)/register/account')}
         >
-          <Text style={styles.registerText}>처음이신가요? <Text style={styles.registerAccent}>회원가입</Text></Text>
+          <Text style={styles.registerText}>
+            처음이신가요? <Text style={styles.registerAccent}>회원가입</Text>
+          </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -128,6 +128,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 32,
     gap: 12,
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
   title: {
     fontSize: 32,
