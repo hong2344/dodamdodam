@@ -1,11 +1,21 @@
-import 'react-native-url-polyfill/auto';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
 
-const supabaseUrl = 'https://zaoniaczzfbstxiuiifa.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inphb25pYWN6emZic3R4aXVpaWZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0ODc1MTgsImV4cCI6MjA5NDA2MzUxOH0.iCybx4pGuYpbb2PueZOEnDTcUo8f748DEaEl3TX7-VI';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+}
+
+declare global {
+  var __dodamdodamSupabase: SupabaseClient<Database> | undefined;
+}
+
+export const supabase =
+  globalThis.__dodamdodamSupabase ?? createClient<Database>(supabaseUrl, supabaseAnonKey);
+
+globalThis.__dodamdodamSupabase = supabase;
 
 export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type Village = Database['public']['Tables']['villages']['Row'];

@@ -1,4 +1,3 @@
-import * as Linking from 'expo-linking';
 import { supabase } from '../supabase';
 import { Database } from '../database.types';
 
@@ -14,6 +13,7 @@ export type RegisterData = {
   nickname?: string;
   email?: string;
   password?: string;
+  match_category?: string;
   avatar_color?: string;
   avatar_type?: number;
 };
@@ -30,8 +30,9 @@ export async function signOut() {
 }
 
 export async function sendPasswordResetEmail(email: string) {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: Linking.createURL('/reset-password'),
+    redirectTo: `${origin}/reset-password`,
   });
   if (error) throw error;
 }

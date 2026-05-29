@@ -2,16 +2,16 @@ export type Character = {
   id: number;
   key: string;
   name: string;
-  image: any;
+  image: string;
 };
 
 export const CHARACTERS: Character[] = [
-  { id: 1, key: 'cat', name: '고양이', image: require('../assets/cat.png') },
-  { id: 2, key: 'rabbit', name: '토끼', image: require('../assets/rabbit.png') },
-  { id: 3, key: 'bear', name: '곰', image: require('../assets/bear.png') },
-  { id: 4, key: 'frog', name: '개구리', image: require('../assets/frog.png') },
-  { id: 5, key: 'hedgehog', name: '고슴도치', image: require('../assets/hedgehog.png') },
-  { id: 6, key: 'dog', name: '강아지', image: require('../assets/dog.png') },
+  { id: 1, key: 'cat', name: '고양이', image: '/assets/cat.png' },
+  { id: 2, key: 'rabbit', name: '토끼', image: '/assets/rabbit.png' },
+  { id: 3, key: 'bear', name: '곰', image: '/assets/bear.png' },
+  { id: 4, key: 'frog', name: '개구리', image: '/assets/frog.png' },
+  { id: 5, key: 'hedgehog', name: '고슴도치', image: '/assets/hedgehog.png' },
+  { id: 6, key: 'dog', name: '강아지', image: '/assets/dog.png' },
 ];
 
 export function getCharacter(avatarType?: number | string | null) {
