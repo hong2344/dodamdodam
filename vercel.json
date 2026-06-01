@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/matching/batch",
+      "schedule": "0 0 * * 1"
+    },
+    {
+      "path": "/api/matching/notify",
+      "schedule": "0 1 * * 1"
+    }
+  ]
+}
