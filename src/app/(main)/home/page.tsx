@@ -328,7 +328,7 @@ export default function HomePage() {
           </div>
         )}
 
-        <div className="px-[28px] flex justify-end absolute" style={{ bottom: 20, right: 10 }}>
+        <div className="px-[20px] flex justify-end absolute" style={{ bottom: 20, right: 0 }}>
           <div
             className="relative px-4 py-[10px] rounded-[14px] text-[12px] font-semibold cursor-pointer flex items-center gap-1.5"
             style={{
