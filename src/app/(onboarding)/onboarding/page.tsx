@@ -23,8 +23,8 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F0E6] flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 680 }}>
+    <div className="min-h-dvh bg-[#F5F0E6] flex items-center justify-center px-6 py-12">
+      <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 'min(680px, calc(100dvh - 6rem))' }}>
 
         <div className="flex justify-end items-center">
           <button onClick={() => router.push('/village')} className="font-mono text-[11px] opacity-50 cursor-pointer">SKIP</button>

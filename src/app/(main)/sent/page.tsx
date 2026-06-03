@@ -44,8 +44,8 @@ export default function SentPage() {
   }, [])
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12" style={{ background: 'linear-gradient(180deg,#CFE0E8 0%,#F0E8C8 100%)' }}>
-      <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 680 }}>
+    <div className="min-h-dvh flex items-center justify-center px-6 py-12" style={{ background: 'linear-gradient(180deg,#CFE0E8 0%,#F0E8C8 100%)' }}>
+      <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 'min(680px, calc(100dvh - 6rem))' }}>
 
         <div className="flex justify-between items-center">
           <Chip>DELIVERY STARTED</Chip>

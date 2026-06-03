@@ -94,7 +94,7 @@ export default function ReadLetterPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F0E6]">
+      <div className="min-h-dvh flex items-center justify-center bg-[#F5F0E6]">
         <p className="text-[13px] text-[#5C544A]">편지를 불러오는 중…</p>
       </div>
     )
@@ -102,15 +102,15 @@ export default function ReadLetterPage() {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F0E6]">
+      <div className="min-h-dvh flex items-center justify-center bg-[#F5F0E6]">
         <p className="text-[13px] text-red-600">{error || '편지를 찾을 수 없어요.'}</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F0E6] flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 680 }}>
+    <div className="min-h-dvh bg-[#F5F0E6] flex items-center justify-center px-6 py-12">
+      <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 'min(680px, calc(100dvh - 6rem))' }}>
 
         <div className="flex justify-between items-center">
           <Link href="/mailbox" className="font-mono text-[16px]">←</Link>

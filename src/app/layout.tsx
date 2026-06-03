@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
       </head>
-      <body className="min-h-screen bg-[#F5F0E6]">{children}</body>
+      <body className="min-h-dvh bg-[#F5F0E6]">{children}</body>
     </html>
   )
 }

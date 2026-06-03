@@ -20,8 +20,8 @@ export default function MatchingPage() {
   const matched = status === 'matched'
 
   return (
-    <div className="min-h-screen bg-[#F5F0E6] flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 680 }}>
+    <div className="min-h-dvh bg-[#F5F0E6] flex items-center justify-center px-6 py-12">
+      <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 'min(680px, calc(100dvh - 6rem))' }}>
 
         <div className="mt-16">
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 44, lineHeight: 1.05, marginTop: 12, fontWeight: 400 }}>

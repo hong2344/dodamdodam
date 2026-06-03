@@ -93,8 +93,8 @@ export default function MailboxPage() {
   const list = tab === 'received' ? received : sent
 
   return (
-    <div className="min-h-screen bg-[#F5F0E6] flex items-center justify-center px-0 py-12">
-      <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 680 }}>
+    <div className="min-h-dvh bg-[#F5F0E6] flex items-center justify-center px-0 py-12">
+      <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 'min(680px, calc(100dvh - 6rem))' }}>
 
         <div className="px-6 flex items-center">
           <Link href="/home" className="font-mono text-[16px]">←</Link>
