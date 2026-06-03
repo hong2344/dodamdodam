@@ -110,6 +110,15 @@ export default function HomePage() {
   const [data, setData] = useState<HomeData | null>(null)
   const [loading, setLoading] = useState(true)
   const [myUserId, setMyUserId] = useState<string | null>(null)
+  const [loggingOut, setLoggingOut] = useState(false)
+
+  const handleLogout = async () => {
+    if (loggingOut) return
+    setLoggingOut(true)
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.replace('/login')
+  }
 
   // 테스트 모드: 매초 업데이트 (운영 모드에선 60_000으로 변경)
   useEffect(() => {
@@ -268,8 +277,17 @@ export default function HomePage() {
       >
         {/* 하단 노란 띠 (5px) */}
         <div className="absolute left-0 right-0 bottom-0 z-10" style={{ height: 20, background: '#F5EBC8' }} />
-        <div className="pt-3 px-6 flex items-center justify-end">
+        <div className="pt-3 px-6 flex items-center justify-between">
           <span className="font-mono text-[11px] opacity-60">✎</span>
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            aria-label="로그아웃"
+            className="font-mono text-[11px] tracking-[0.08em] opacity-70 hover:opacity-100 transition-opacity disabled:opacity-40"
+            style={{ color: textColor, background: 'transparent', border: 'none', cursor: 'pointer', transform: 'translate(-10px, 10px)' }}
+          >
+            {loggingOut ? '로그아웃 중…' : '로그아웃'}
+          </button>
         </div>
         <div className="px-6 text-center" style={{ marginTop: 18 }}>
           <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-55">WELCOME TO</p>
