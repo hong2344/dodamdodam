@@ -86,6 +86,11 @@ function ProgressBar({ label, time, cell, reverse }: ProgressBarProps) {
             </svg>
           </div>
         </div>
+        {/* 진행선 양 끝 편지집 위치 (왼쪽=내 편지집, 오른쪽=상대 편지집) */}
+        <div className="flex items-start justify-between mt-[7px] text-[8.5px] leading-none opacity-70">
+          <span className="flex flex-col items-center gap-[3px]"><HouseIcon size={12} />내 편지집</span>
+          <span className="flex flex-col items-center gap-[3px]"><HouseIcon size={12} />상대 편지집</span>
+        </div>
       </div>
     </div>
   )
