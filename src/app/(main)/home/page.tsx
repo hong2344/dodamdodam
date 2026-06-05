@@ -298,14 +298,19 @@ export default function HomePage() {
               onClick={() => push.requestPermissionAndSubscribe()}
               disabled={push.isLoading || push.permission === 'granted'}
               aria-label="알림 켜기"
-              className="font-mono text-[11px] tracking-[0.08em] opacity-70 hover:opacity-100 transition-opacity disabled:opacity-100"
+              className="font-mono text-[11px] tracking-[0.08em] opacity-70 hover:opacity-100 transition-opacity disabled:opacity-100 inline-flex items-center gap-[5px]"
               style={{ color: textColor, background: 'transparent', border: 'none', cursor: push.permission === 'granted' ? 'default' : 'pointer' }}
             >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                {push.permission !== 'granted' && <line x1="3" y1="3" x2="21" y2="21" />}
+              </svg>
               {push.isLoading
                 ? '알림 설정 중…'
                 : push.permission === 'granted'
-                  ? '🔔 알림 켜짐'
-                  : '🔕 알림 켜기'}
+                  ? '알림 켜짐'
+                  : '알림 켜기'}
             </button>
           ) : (
             <span />
