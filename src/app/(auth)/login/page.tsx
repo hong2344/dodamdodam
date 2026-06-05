@@ -41,8 +41,8 @@ export default function LoginPage() {
         </div>
 
         <div className="mt-5 text-center">
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 56, lineHeight: 1.0, color: '#00643E', fontWeight: 400, letterSpacing: '-0.02em' }}>
-            도담<br />도담
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 48, lineHeight: 1.0, color: '#00643E', fontWeight: 400, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+            고민 한 조각
           </h1>
           <p className="mt-3 font-mono text-[11px] tracking-[0.16em] uppercase opacity-65">
             익명 편지 교환 — anonymous letters

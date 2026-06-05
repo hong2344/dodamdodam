@@ -76,7 +76,7 @@ export default function SignupPage() {
         <div className="mt-12">
           <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-50 m-0">welcome to</p>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 40, lineHeight: 1.05, marginTop: 12, color: '#1A1816', fontWeight: 400 }}>
-            도담도담<br />
+            고민 한 조각<br />
             <em style={{ color: '#00643E', fontStyle: 'italic' }}>회원가입.</em>
           </h2>
         </div>

@@ -7,7 +7,7 @@ import Avatar from '@/components/Avatar'
 import Btn from '@/components/Btn'
 
 const STAGES = [
-  { num: '01', title: '익명으로\n마음을 전해요', desc: '도담도담에서는 누구인지 모르는 친구에게 따뜻한 편지를 보낼 수 있어요.', btn: '다음' },
+  { num: '01', title: '익명으로\n마음을 전해요', desc: ''고민 한 조각'에서는 누구인지 모르는 친구에게 따뜻한 편지를 보낼 수 있어요.', btn: '다음' },
   { num: '02', title: '귀여운\n아바타를 선택해요', desc: '나만의 동물 아바타를 골라 익명으로 소통해보세요.', btn: '다음' },
   { num: '03', title: '편지가\n마을을 여행해요', desc: '보낸 편지는 작은 버스를 타고 상대방의 마을로 이동합니다.', btn: '시작하기 →' },
 ]

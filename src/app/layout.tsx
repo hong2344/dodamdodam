@@ -15,7 +15,7 @@ const dmMono = DM_Mono({
 })
 
 export const metadata: Metadata = {
-  title: '도담도담',
+  title: '고민 한 조각',
   description: '익명 편지 교환 앱',
 }
 

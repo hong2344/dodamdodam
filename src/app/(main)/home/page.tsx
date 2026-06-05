@@ -33,18 +33,19 @@ const VILLAGE_PALETTES: Record<string, { name: string; bg: string }> = {
   night:   { name: '밤',   bg: 'linear-gradient(170deg,#2A3858 0%,#1A2240 80%,#0A0E1F 100%)' },
 }
 
-// ⚠️ 테스트 모드: 3초마다 1칸씩 이동 (총 18초) (실제 운영 시 30분으로 변경)
-const CELL_MS = 3 * 1000
+// 운영 모드: 30분마다 1칸씩 이동 (총 3시간)
+const CELL_MS = 30 * 60 * 1000
 const TOTAL_MS = 6 * CELL_MS
 
 function formatElapsed(ms: number): string {
-  const totalSec = Math.floor(ms / 1000)
-  const m = Math.floor(totalSec / 60)
-  const s = totalSec % 60
-  const totalSecAll = Math.floor(TOTAL_MS / 1000)
-  const mAll = Math.floor(totalSecAll / 60)
-  const sAll = totalSecAll % 60
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} / ${String(mAll).padStart(2, '0')}:${String(sAll).padStart(2, '0')}`
+  const fmt = (totalMs: number) => {
+    const totalSec = Math.floor(totalMs / 1000)
+    const h = Math.floor(totalSec / 3600)
+    const m = Math.floor((totalSec % 3600) / 60)
+    const s = totalSec % 60
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
+  return `${fmt(ms)} / ${fmt(TOTAL_MS)}`
 }
 
 interface ProgressBarProps {
@@ -282,8 +283,7 @@ export default function HomePage() {
       >
         {/* 하단 노란 띠 (5px) */}
         <div className="absolute left-0 right-0 bottom-0 z-10" style={{ height: 20, background: '#F5EBC8' }} />
-        <div className="pt-3 px-6 flex items-center justify-between">
-          <span className="font-mono text-[11px] opacity-60">✎</span>
+        <div className="pt-3 px-6 flex items-center justify-end">
           <button
             onClick={handleLogout}
             disabled={loggingOut}
@@ -319,12 +319,13 @@ export default function HomePage() {
             <ellipse cx="50" cy="190" rx="120" ry="30" fill="rgba(0,100,62,0.18)" />
             <ellipse cx="240" cy="200" rx="150" ry="40" fill="rgba(0,100,62,0.22)" />
           </svg>
-          <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
-            <Avatar kind={data.myAvatar} size={72} dim={dim} />
-            <span className="font-mono text-[10px] tracking-[0.1em] opacity-70" style={{ color: textColor }}>
-              {data.myNickname || AVATAR_LABEL[data.myAvatar]} 님의 마을
-            </span>
-          </div>
+        </div>
+
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 z-10">
+          <Avatar kind={data.myAvatar} size={72} dim={dim} />
+          <span className="font-mono text-[10px] tracking-[0.1em] opacity-70" style={{ color: textColor }}>
+            {data.myNickname || AVATAR_LABEL[data.myAvatar]} 님의 마을
+          </span>
         </div>
 
         {showProgress && progress && (
