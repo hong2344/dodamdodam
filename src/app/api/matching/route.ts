@@ -21,13 +21,23 @@ export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => ({}))) as { category?: string }
   const category = body?.category
 
-  // 매칭 신청: 관심사 저장. 운영 모드에선 신청 시간창을 서버에서 강제한다.
+  // 매칭 신청: 관심사 저장.
+  //  - 첫 신청(매칭 이력 없는 신규 가입자)은 아무 때나 허용 → 다음 월요일 배치에서 매칭.
+  //  - 재신청(이전에 매칭된 적 있는 사용자)은 운영 모드에서 신청 시간창(일 20-24시 KST)에만 허용.
   if (category) {
     if (!isInstant && !isApplicationWindowOpen()) {
-      return NextResponse.json(
-        { ok: false, error: 'not_in_window', message: APPLICATION_WINDOW_MESSAGE },
-        { status: 403 }
-      )
+      const admin = createAdminClient()
+      const { count } = await admin
+        .from('matches')
+        .select('id', { count: 'exact', head: true })
+        .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
+      const hasPriorMatch = (count ?? 0) > 0
+      if (hasPriorMatch) {
+        return NextResponse.json(
+          { ok: false, error: 'not_in_window', message: APPLICATION_WINDOW_MESSAGE },
+          { status: 403 }
+        )
+      }
     }
 
     const { error: updateErr } = await supabase
