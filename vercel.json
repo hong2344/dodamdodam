@@ -1,11 +1,12 @@
 {
-  "buildCommand": "npx expo export --platform web",
-  "outputDirectory": "dist",
-  "framework": null,
-  "rewrites": [
+  "crons": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "path": "/api/matching/batch",
+      "schedule": "0 0 * * 1"
+    },
+    {
+      "path": "/api/matching/notify",
+      "schedule": "0 1 * * 1"
     }
   ]
 }

@@ -1,34 +1,29 @@
 {
-  "main": "expo-router/entry",
+  "name": "app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
   "dependencies": {
-    "@expo/metro-runtime": "~6.1.2",
-    "@react-native-async-storage/async-storage": "2.2.0",
-    "@supabase/supabase-js": "^2.106.0",
-    "codex": "^0.2.3",
-    "expo": "~54.0.34",
-    "expo-constants": "~18.0.13",
-    "expo-linking": "~8.0.12",
-    "expo-router": "~6.0.23",
-    "expo-secure-store": "~15.0.8",
-    "next": "^15.5.0",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "react-native": "0.81.5",
-    "react-native-gesture-handler": "~2.28.0",
-    "react-native-reanimated": "~3.10.1",
-    "react-native-safe-area-context": "~5.6.0",
-    "react-native-screens": "~4.16.0",
-    "react-native-url-polyfill": "^3.0.0",
-    "react-native-web": "^0.21.0",
-    "react-native-worklets-core": "^1.6.3",
-    "web-push": "^3.6.7",
-    "zustand": "^5.0.13"
+    "@phosphor-icons/react": "^2.1.10",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.106.2",
+    "next": "16.2.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@types/node": "^25.9.1",
-    "@types/react": "~19.1.10",
-    "@types/web-push": "^3.6.4",
-    "supabase": "^2.100.1",
-    "typescript": "~5.9.2"
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
