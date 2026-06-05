@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Avatar from '@/components/Avatar'
 import HouseIcon from '@/components/HouseIcon'
 import { createClient } from '@/lib/supabase/client'
+import { usePushNotification } from '@/hooks/usePushNotification'
 import { HomeState, Avatar as AvatarType } from '@/types'
 
 // avatar_type 숫자 → 동물 매핑
@@ -117,6 +118,14 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [myUserId, setMyUserId] = useState<string | null>(null)
   const [loggingOut, setLoggingOut] = useState(false)
+
+  const push = usePushNotification({
+    getAccessToken: async () => {
+      const supabase = createClient()
+      const { data } = await supabase.auth.getSession()
+      return data.session?.access_token ?? null
+    },
+  })
 
   const handleLogout = async () => {
     if (loggingOut) return
@@ -283,17 +292,37 @@ export default function HomePage() {
       >
         {/* 하단 노란 띠 (5px) */}
         <div className="absolute left-0 right-0 bottom-0 z-10" style={{ height: 20, background: '#F5EBC8' }} />
-        <div className="pt-3 px-6 flex items-center justify-end">
+        <div className="pt-3 px-6 flex items-center justify-between" style={{ transform: 'translateY(10px)' }}>
+          {push.isSupported ? (
+            <button
+              onClick={() => push.requestPermissionAndSubscribe()}
+              disabled={push.isLoading || push.permission === 'granted'}
+              aria-label="알림 켜기"
+              className="font-mono text-[11px] tracking-[0.08em] opacity-70 hover:opacity-100 transition-opacity disabled:opacity-100"
+              style={{ color: textColor, background: 'transparent', border: 'none', cursor: push.permission === 'granted' ? 'default' : 'pointer' }}
+            >
+              {push.isLoading
+                ? '알림 설정 중…'
+                : push.permission === 'granted'
+                  ? '🔔 알림 켜짐'
+                  : '🔕 알림 켜기'}
+            </button>
+          ) : (
+            <span />
+          )}
           <button
             onClick={handleLogout}
             disabled={loggingOut}
             aria-label="로그아웃"
             className="font-mono text-[11px] tracking-[0.08em] opacity-70 hover:opacity-100 transition-opacity disabled:opacity-40"
-            style={{ color: textColor, background: 'transparent', border: 'none', cursor: 'pointer', transform: 'translate(-10px, 10px)' }}
+            style={{ color: textColor, background: 'transparent', border: 'none', cursor: 'pointer' }}
           >
             {loggingOut ? '로그아웃 중…' : '로그아웃'}
           </button>
         </div>
+        {push.error && (
+          <p className="px-6 font-mono text-[10px] text-red-500 -mt-1" style={{ transform: 'translateY(10px)' }}>{push.error}</p>
+        )}
         <div className="px-6 text-center" style={{ marginTop: 18 }}>
           <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-55">WELCOME TO</p>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, margin: '4px 0 0', fontWeight: 400, color: textColor }}>{v.name} 마을</h2>
