@@ -26,21 +26,24 @@ export default function CategoryPage() {
     if (!selected) return
     setSaving(true)
     setError(null)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setSaving(false)
+    // 관심사 저장 = 매칭 신청. 신청 시간창(일 20-24시 KST)은 서버에서 강제한다.
+    const res = await fetch('/api/matching', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: selected }),
+    })
+    const data = await res.json().catch(() => null)
+    setSaving(false)
+    if (res.status === 401) {
       setError('로그인이 필요해요. 다시 로그인해주세요.')
       return
     }
-    // 관심사 저장 = 이번 주 매칭 풀에 등록 (배치가 match_category 기준으로 매칭)
-    const { error: updateErr } = await supabase
-      .from('profiles')
-      .update({ match_category: selected })
-      .eq('id', user.id)
-    setSaving(false)
-    if (updateErr) {
-      setError('관심사 저장 중 오류가 발생했어요: ' + updateErr.message)
+    if (res.status === 403) {
+      setError(data?.message ?? '지금은 매칭 신청 시간이 아니에요.')
+      return
+    }
+    if (!res.ok || data?.ok === false) {
+      setError('매칭 신청 중 오류가 발생했어요.' + (data?.error ? ` (${data.error})` : ''))
       return
     }
     window.localStorage.setItem('dodam:category', selected)

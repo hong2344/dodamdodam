@@ -1,21 +1,46 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isApplicationWindowOpen, APPLICATION_WINDOW_MESSAGE } from '@/lib/week'
 
 export const dynamic = 'force-dynamic'
 
-// POST /api/matching - 매칭 풀 등록 (+ 테스트용 즉시 매칭)
-// 온보딩에서 관심사를 저장하면(=풀 등록) 마지막에 호출된다.
-export async function POST() {
+// POST /api/matching - 매칭 신청(관심사 저장) + 테스트용 즉시 매칭
+// body: { category?: string }
+//  - category가 있으면 = 매칭 신청. 운영 모드에선 PRD 신청 시간창(일 20-24시 KST)에만 허용한다.
+//  - 온보딩 관심사 페이지가 이 라우트로 신청하고, /matching 페이지는 body 없이 호출(즉시모드 매칭 트리거).
+export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
-  // 운영 모드: 등록은 profiles.match_category 저장으로 이미 끝났고,
-  // 실제 매칭은 월요일 주간 배치(/api/matching/batch)가 처리한다.
-  if (process.env.MATCH_MODE !== 'instant') {
+  const isInstant = process.env.MATCH_MODE === 'instant'
+
+  const body = (await request.json().catch(() => ({}))) as { category?: string }
+  const category = body?.category
+
+  // 매칭 신청: 관심사 저장. 운영 모드에선 신청 시간창을 서버에서 강제한다.
+  if (category) {
+    if (!isInstant && !isApplicationWindowOpen()) {
+      return NextResponse.json(
+        { ok: false, error: 'not_in_window', message: APPLICATION_WINDOW_MESSAGE },
+        { status: 403 }
+      )
+    }
+
+    const { error: updateErr } = await supabase
+      .from('profiles')
+      .update({ match_category: category })
+      .eq('id', user.id)
+    if (updateErr) {
+      return NextResponse.json({ ok: false, error: updateErr.message }, { status: 500 })
+    }
+  }
+
+  // 운영 모드: 실제 매칭은 월요일 주간 배치(/api/matching/batch)가 처리한다.
+  if (!isInstant) {
     return NextResponse.json({ ok: true, mode: 'batch', matched: false })
   }
 

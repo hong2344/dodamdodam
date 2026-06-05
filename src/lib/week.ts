@@ -11,3 +11,16 @@ export function kstWeekStart(now: Date = new Date()): string {
   kst.setUTCDate(kst.getUTCDate() - isoOffset)
   return kst.toISOString().slice(0, 10)
 }
+
+// PRD 매칭 신청 접수 시간: 한국시간(KST) 매주 일요일 20:00 ~ 24:00.
+// 이 시간에만 매칭 신청(관심사 저장)이 가능하다.
+export function isApplicationWindowOpen(now: Date = new Date()): boolean {
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+  const day = kst.getUTCDay() // 0=일
+  const hour = kst.getUTCHours()
+  return day === 0 && hour >= 20 && hour < 24
+}
+
+// 신청 불가 안내용 문구.
+export const APPLICATION_WINDOW_MESSAGE =
+  '매칭 신청은 매주 일요일 저녁 8시~자정에만 가능해요.'
