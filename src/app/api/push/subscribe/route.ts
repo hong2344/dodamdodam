@@ -84,3 +84,47 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const authorization = request.headers.get('authorization');
+    const token = authorization?.startsWith('Bearer ') ? authorization.slice('Bearer '.length) : null;
+
+    if (!token) {
+      return NextResponse.json({ error: '인증 토큰이 필요합니다.' }, { status: 401 });
+    }
+
+    const { endpoint } = (await request.json()) as { endpoint?: string };
+
+    if (!endpoint) {
+      return NextResponse.json({ error: 'endpoint가 필요합니다.' }, { status: 400 });
+    }
+
+    const supabase = createSupabaseAdminClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return NextResponse.json({ error: '유효하지 않은 인증 토큰입니다.' }, { status: 401 });
+    }
+
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('endpoint', endpoint);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : '푸시 구독 해제 중 오류가 발생했습니다.' },
+      { status: 500 }
+    );
+  }
+}
