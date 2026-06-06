@@ -19,7 +19,7 @@ interface Props {
 export default function Avatar({ kind, size = 80, label, dim = false }: Props) {
   const p = palette[kind]
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, opacity: dim ? 0.35 : 1 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, opacity: dim ? 0.6 : 1 }}>
       <svg width={size} height={size} viewBox="0 0 100 100" style={{ filter: 'drop-shadow(0 0 0.8px rgba(40,28,16,0.7)) drop-shadow(0 2px 4px rgba(0,0,0,0.22))' }}>
         <circle cx="50" cy="56" r="34" fill={p.fur} />
         {kind === 'cat' && (<><polygon points="22,38 30,18 40,32" fill={p.ear} /><polygon points="78,38 70,18 60,32" fill={p.ear} /></>)}

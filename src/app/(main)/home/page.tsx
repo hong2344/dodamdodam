@@ -375,8 +375,8 @@ export default function HomePage() {
             className="relative px-4 py-[10px] rounded-[14px] text-[12px] font-semibold cursor-pointer flex items-center gap-1.5"
             style={{
               background: 'transparent',
-              color: dim ? '#5C544A' : textColor,
-              textShadow: dim ? 'none' : textShadow,
+              color: dim ? (isDark ? 'rgba(255,255,255,0.78)' : '#5C544A') : textColor,
+              textShadow,
               border: 'none',
             }}
             onClick={() => router.push('/mailbox')}
