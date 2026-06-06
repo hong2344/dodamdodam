@@ -119,7 +119,7 @@ export default function VillagePage() {
                     boxShadow: isActive ? '0 6px 18px -8px rgba(0,100,62,0.5)' : 'none',
                   }}
                 >
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 28, margin: 0, fontWeight: 400, color: style.dark ? '#F5F0E6' : '#1A1816', zIndex: 1, letterSpacing: '-0.01em' }}>{v.name}</h3>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 28, margin: 0, fontWeight: 500, color: style.dark ? '#FFFFFF' : '#1A1816', textShadow: style.dark ? '0 1px 4px rgba(0,0,0,0.6)' : '0 1px 3px rgba(255,255,255,0.65)', zIndex: 1, letterSpacing: '-0.01em' }}>{v.name}</h3>
                 </div>
               )
             })}

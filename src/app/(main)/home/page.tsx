@@ -282,7 +282,9 @@ export default function HomePage() {
   const dim = state === 1
   const badgeN = false // MVP 테스트 모드: state 6 비활성화. 운영 모드 복구 시 `state === 6`로 변경.
   const isDark = data.villageTheme === 'night' || data.villageTheme === 'evening'
-  const textColor = isDark ? '#F5F0E6' : '#1A1816'
+  const textColor = isDark ? '#FFFFFF' : '#1A1816'
+  // 그라데이션 배경 위에서 글씨가 묻히지 않도록 대비 보강
+  const textShadow = isDark ? '0 1px 3px rgba(0,0,0,0.5)' : '0 1px 2px rgba(255,255,255,0.55)'
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: '#F5F0E6' }}>
@@ -298,8 +300,8 @@ export default function HomePage() {
               onClick={() => (push.isSubscribed ? push.unsubscribe() : push.requestPermissionAndSubscribe())}
               disabled={push.isLoading}
               aria-label={push.isSubscribed ? '알림 끄기' : '알림 켜기'}
-              className="font-mono text-[11px] tracking-[0.08em] opacity-70 hover:opacity-100 transition-opacity disabled:opacity-40 inline-flex items-center gap-[5px]"
-              style={{ color: textColor, background: 'transparent', border: 'none', cursor: 'pointer' }}
+              className="font-mono text-[11px] tracking-[0.08em] opacity-85 hover:opacity-100 transition-opacity disabled:opacity-40 inline-flex items-center gap-[5px]"
+              style={{ color: textColor, textShadow, background: 'transparent', border: 'none', cursor: 'pointer' }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
@@ -319,8 +321,8 @@ export default function HomePage() {
             onClick={handleLogout}
             disabled={loggingOut}
             aria-label="로그아웃"
-            className="font-mono text-[11px] tracking-[0.08em] opacity-70 hover:opacity-100 transition-opacity disabled:opacity-40"
-            style={{ color: textColor, background: 'transparent', border: 'none', cursor: 'pointer' }}
+            className="font-mono text-[11px] tracking-[0.08em] opacity-85 hover:opacity-100 transition-opacity disabled:opacity-40"
+            style={{ color: textColor, textShadow, background: 'transparent', border: 'none', cursor: 'pointer' }}
           >
             {loggingOut ? '로그아웃 중…' : '로그아웃'}
           </button>
@@ -329,8 +331,8 @@ export default function HomePage() {
           <p className="px-6 font-mono text-[10px] text-red-500 -mt-1" style={{ transform: 'translateY(10px)' }}>{push.error}</p>
         )}
         <div className="px-6 text-center" style={{ marginTop: 18 }}>
-          <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-55">WELCOME TO</p>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, margin: '4px 0 0', fontWeight: 400, color: textColor }}>{v.name} 마을</h2>
+          <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-70" style={{ textShadow }}>WELCOME TO</p>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, margin: '4px 0 0', fontWeight: 400, color: textColor, textShadow }}>{v.name} 마을</h2>
         </div>
 
         {showBanner && data.partnerAvatar && (
@@ -357,7 +359,7 @@ export default function HomePage() {
 
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 z-10">
           <Avatar kind={data.myAvatar} size={72} dim={dim} />
-          <span className="font-mono text-[10px] tracking-[0.1em] opacity-70" style={{ color: textColor }}>
+          <span className="font-mono text-[10px] tracking-[0.1em] opacity-85" style={{ color: textColor, textShadow }}>
             {data.myNickname || AVATAR_LABEL[data.myAvatar]} 님의 마을
           </span>
         </div>
@@ -374,6 +376,7 @@ export default function HomePage() {
             style={{
               background: 'transparent',
               color: dim ? '#5C544A' : textColor,
+              textShadow: dim ? 'none' : textShadow,
               border: 'none',
             }}
             onClick={() => router.push('/mailbox')}

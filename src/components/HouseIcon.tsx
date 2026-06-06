@@ -5,7 +5,7 @@ interface Props {
 // Avatar.tsx와 같은 톤: 둥근 형태 + 두 톤 + 따뜻한 색 + 작은 디테일
 export default function HouseIcon({ size = 20 }: Props) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24">
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ filter: 'drop-shadow(0 0 0.5px rgba(40,28,16,0.6)) drop-shadow(0 1px 2px rgba(0,0,0,0.25))' }}>
       {/* 지붕 (둥근 삼각형 느낌) */}
       <path d="M12 3 L3 11 Q3 12 4 12 L20 12 Q21 12 21 11 Z" fill="#D87858" />
       {/* 몸체 */}
