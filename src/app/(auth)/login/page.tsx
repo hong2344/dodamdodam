@@ -57,14 +57,14 @@ export default function LoginPage() {
           )}
           <div className="h-[6px]" />
           <Btn onClick={handleLogin} disabled={loading}>{loading ? '로그인 중…' : '로그인 →'}</Btn>
-        </div>
 
-        <div className="mt-auto pt-8 flex justify-center gap-[14px] text-[12px] text-[#5C544A]">
-          <span className="cursor-pointer">아이디찾기</span>
-          <span className="opacity-40">|</span>
-          <span className="cursor-pointer">비밀번호찾기</span>
-          <span className="opacity-40">|</span>
-          <Link href="/signup" className="text-[#00643E] font-semibold">회원가입</Link>
+          <div className="mt-3 flex justify-center gap-[14px] text-[12px] text-[#5C544A]">
+            <span className="cursor-pointer">아이디찾기</span>
+            <span className="opacity-40">|</span>
+            <span className="cursor-pointer">비밀번호찾기</span>
+            <span className="opacity-40">|</span>
+            <Link href="/signup" className="text-[#00643E] font-semibold">회원가입</Link>
+          </div>
         </div>
 
       </div>

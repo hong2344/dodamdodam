@@ -376,7 +376,7 @@ export default function HomePage() {
               color: dim ? '#5C544A' : textColor,
               border: 'none',
             }}
-            onClick={() => !dim && router.push('/mailbox')}
+            onClick={() => router.push('/mailbox')}
           >
             <HouseIcon size={50} />
             편지집
