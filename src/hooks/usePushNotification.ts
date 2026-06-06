@@ -24,6 +24,11 @@ type PushNotificationState = {
 
 const DEFAULT_SUBSCRIBE_URL = '/api/push/subscribe';
 
+async function registerAndWaitForActiveServiceWorker() {
+  await navigator.serviceWorker.register('/sw.js');
+  return navigator.serviceWorker.ready;
+}
+
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -111,7 +116,7 @@ export function usePushNotification(
         return null;
       }
 
-      const registration = await navigator.serviceWorker.register('/sw.js');
+      const registration = await registerAndWaitForActiveServiceWorker();
       const existingSubscription = await registration.pushManager.getSubscription();
       const nextSubscription =
         existingSubscription ||
