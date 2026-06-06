@@ -358,7 +358,7 @@ export default function HomePage() {
         </div>
 
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 z-10">
-          <Avatar kind={data.myAvatar} size={72} dim={dim} />
+          <Avatar kind={data.myAvatar} size={72} />
           <span className="font-mono text-[10px] tracking-[0.1em] opacity-85" style={{ color: textColor, textShadow }}>
             {data.myNickname || AVATAR_LABEL[data.myAvatar]} 님의 마을
           </span>
