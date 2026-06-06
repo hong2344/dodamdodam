@@ -32,6 +32,23 @@ export default function LoginPage() {
     router.push('/home')
   }
 
+  const handleKakaoLogin = async () => {
+    setError(null)
+    setLoading(true)
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: {
+        redirectTo: `${window.location.origin}/api/auth/callback?next=/home`,
+      },
+    })
+    setLoading(false)
+
+    if (error) {
+      setError('카카오 로그인에 실패했어요. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
   return (
     <div className="min-h-dvh bg-[#F5F0E6] flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 'min(680px, calc(100dvh - 6rem))' }}>
@@ -57,6 +74,7 @@ export default function LoginPage() {
           )}
           <div className="h-[6px]" />
           <Btn onClick={handleLogin} disabled={loading}>{loading ? '로그인 중…' : '로그인 →'}</Btn>
+          <Btn variant="kakao" onClick={handleKakaoLogin} disabled={loading}>카카오계정으로 로그인</Btn>
 
           <div className="mt-3 flex justify-center gap-[14px] text-[12px] text-[#5C544A]">
             <span className="cursor-pointer">아이디찾기</span>

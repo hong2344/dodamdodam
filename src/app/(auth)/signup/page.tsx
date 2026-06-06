@@ -65,6 +65,23 @@ export default function SignupPage() {
     router.push('/onboarding')
   }
 
+  const handleKakaoSignup = async () => {
+    setError(null)
+    setLoading(true)
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: {
+        redirectTo: `${window.location.origin}/api/auth/callback?next=/onboarding`,
+      },
+    })
+    setLoading(false)
+
+    if (error) {
+      setError('카카오 회원가입에 실패했어요. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
   return (
     <div className="min-h-dvh bg-[#F5F0E6] flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 'min(680px, calc(100dvh - 6rem))' }}>
@@ -97,7 +114,7 @@ export default function SignupPage() {
 
         <div className="mt-auto flex flex-col gap-[10px]">
           <Btn onClick={handleSignup} disabled={loading}>{loading ? '가입 중…' : '가입하기 →'}</Btn>
-          <p className="font-mono text-[10px] tracking-[0.12em] opacity-40 text-center">카카오 로그인은 곧 추가될 예정입니다</p>
+          <Btn variant="kakao" onClick={handleKakaoSignup} disabled={loading}>카카오계정으로 시작하기</Btn>
         </div>
 
       </div>
