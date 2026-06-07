@@ -35,3 +35,6 @@ alter table public.profiles
 
 create unique index if not exists profiles_nickname_unique_idx
   on public.profiles (lower(btrim(nickname)));
+
+alter table public.profiles
+  add column if not exists nickname_set boolean not null default false;

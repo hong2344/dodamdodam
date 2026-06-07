@@ -67,6 +67,7 @@ export async function POST(request: Request) {
         id: user.id,
         email: user.email ?? null,
         nickname,
+        nickname_set: true,
         created_at: new Date().toISOString(),
       },
       { onConflict: 'id' }

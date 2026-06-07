@@ -70,6 +70,7 @@ export default function SignupPage() {
     const { error: profileError } = await supabase.from('profiles').insert({
       id: userId,
       nickname: nicknameValidation.nickname,
+      nickname_set: true,
       age: ageNum,
       created_at: new Date().toISOString(),
     })
@@ -90,7 +91,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
       options: {
-        redirectTo: getSiteUrl('/api/auth/callback?next=/onboarding'),
+        redirectTo: getSiteUrl('/api/auth/callback?next=/nickname'),
       },
     })
     setLoading(false)

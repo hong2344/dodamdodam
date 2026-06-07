@@ -24,22 +24,24 @@ export async function GET(request: Request) {
 
   if (next?.startsWith('/') && !next.startsWith('//')) {
     const { data: profile } = user
-      ? await supabase.from('profiles').select('nickname').eq('id', user.id).maybeSingle()
+      ? await supabase.from('profiles').select('nickname, nickname_set').eq('id', user.id).maybeSingle()
       : { data: null }
 
-    return NextResponse.redirect(new URL(profile?.nickname ? next : '/nickname', origin))
+    return NextResponse.redirect(new URL(profile?.nickname && profile.nickname_set ? next : '/nickname', origin))
   }
 
   const { data: profile } = user
     ? await supabase
         .from('profiles')
-        .select('nickname, village_id, avatar_type, match_category')
+        .select('nickname, nickname_set, village_id, avatar_type, match_category')
         .eq('id', user.id)
         .maybeSingle()
     : { data: null }
 
   const destination =
     !profile?.nickname
+      ? '/nickname'
+      : !profile.nickname_set
       ? '/nickname'
       : profile?.village_id && profile?.avatar_type && profile?.match_category
       ? '/home'

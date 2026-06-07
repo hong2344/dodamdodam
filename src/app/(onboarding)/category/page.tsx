@@ -39,7 +39,8 @@ export default function CategoryPage() {
       return
     }
     if (res.status === 403) {
-      setError(data?.message ?? '지금은 매칭 신청 시간이 아니에요.')
+      window.localStorage.setItem('dodam:category', selected)
+      router.push('/home')
       return
     }
     if (!res.ok || data?.ok === false) {

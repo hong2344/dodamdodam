@@ -51,11 +51,11 @@ export async function proxy(req: NextRequest) {
   if (user && !pathname.startsWith('/api')) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('nickname')
+      .select('nickname, nickname_set')
       .eq('id', user.id)
       .maybeSingle()
 
-    if (!profile?.nickname && pathname !== NICKNAME_PATH) {
+    if ((!profile?.nickname || !profile.nickname_set) && pathname !== NICKNAME_PATH) {
       const url = req.nextUrl.clone()
       url.pathname = NICKNAME_PATH
       return NextResponse.redirect(url)

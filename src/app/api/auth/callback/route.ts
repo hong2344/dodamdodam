@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('nickname')
+    .select('nickname, nickname_set')
     .eq('id', data.user.id)
     .maybeSingle()
 
@@ -30,5 +30,5 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/login?error=profile', origin))
   }
 
-  return NextResponse.redirect(new URL(profile?.nickname ? next : '/nickname', origin))
+  return NextResponse.redirect(new URL(profile?.nickname && profile.nickname_set ? next : '/nickname', origin))
 }
