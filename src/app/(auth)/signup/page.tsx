@@ -6,6 +6,7 @@ import { useState } from 'react'
 import Btn from '@/components/Btn'
 import Field from '@/components/Field'
 import { getSiteUrl } from '@/lib/auth/url'
+import { validateNickname } from '@/lib/profile/nickname'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignupPage() {
@@ -19,8 +20,14 @@ export default function SignupPage() {
 
   const handleSignup = async () => {
     setError(null)
+    const nicknameValidation = validateNickname(nickname)
+
     if (!email || !pw || !nickname || !age) {
       setError('이메일, 비밀번호, 닉네임, 나이를 모두 입력해주세요.')
+      return
+    }
+    if (nicknameValidation.error) {
+      setError(nicknameValidation.error)
       return
     }
     if (pw.length < 6) {
@@ -34,6 +41,15 @@ export default function SignupPage() {
       return
     }
     setLoading(true)
+
+    const nicknameCheck = await fetch(`/api/profile/nickname?value=${encodeURIComponent(nicknameValidation.nickname)}`)
+    if (!nicknameCheck.ok) {
+      const body = await nicknameCheck.json().catch(() => null)
+      setLoading(false)
+      setError(body?.error ?? '닉네임을 확인하지 못했어요.')
+      return
+    }
+
     const supabase = createClient()
 
     // 1) Supabase Auth로 가입
@@ -53,13 +69,14 @@ export default function SignupPage() {
     // 2) profiles 테이블에 row 추가
     const { error: profileError } = await supabase.from('profiles').insert({
       id: userId,
-      nickname,
+      nickname: nicknameValidation.nickname,
       age: ageNum,
       created_at: new Date().toISOString(),
     })
     setLoading(false)
     if (profileError) {
-      setError('프로필 생성 중 오류가 발생했어요: ' + profileError.message)
+      const message = profileError.code === '23505' ? '이미 사용 중인 닉네임이에요.' : profileError.message
+      setError('프로필 생성 중 오류가 발생했어요: ' + message)
       return
     }
 

@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 
 // 인증 없이 접근 가능한 경로
 const PUBLIC_PATHS = ['/login', '/signup', '/api/auth']
+const NICKNAME_PATH = '/nickname'
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -45,6 +46,20 @@ export async function proxy(req: NextRequest) {
     const url = req.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
+  }
+
+  if (user && !pathname.startsWith('/api')) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('nickname')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!profile?.nickname && pathname !== NICKNAME_PATH) {
+      const url = req.nextUrl.clone()
+      url.pathname = NICKNAME_PATH
+      return NextResponse.redirect(url)
+    }
   }
 
   // 로그인 + 로그인/회원가입 페이지 → 홈으로

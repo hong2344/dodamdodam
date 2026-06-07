@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { ensureProfileForUser } from '@/lib/auth/ensure-profile'
 import { getSiteOrigin } from '@/lib/auth/url'
 import { createClient } from '@/lib/supabase/server'
 
@@ -21,11 +20,15 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/login?error=oauth', origin))
   }
 
-  try {
-    await ensureProfileForUser(supabase, data.user)
-  } catch {
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('nickname')
+    .eq('id', data.user.id)
+    .maybeSingle()
+
+  if (profileError) {
     return NextResponse.redirect(new URL('/login?error=profile', origin))
   }
 
-  return NextResponse.redirect(new URL(next, origin))
+  return NextResponse.redirect(new URL(profile?.nickname ? next : '/nickname', origin))
 }
