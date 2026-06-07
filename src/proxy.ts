@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 // 인증 없이 접근 가능한 경로
 const PUBLIC_PATHS = ['/login', '/signup', '/api/auth']
 const NICKNAME_PATH = '/nickname'
+const ONBOARDING_PATHS = ['/onboarding', '/village', '/avatar', '/category', NICKNAME_PATH]
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -55,9 +56,11 @@ export async function proxy(req: NextRequest) {
       .eq('id', user.id)
       .maybeSingle()
 
-    if ((!profile?.nickname || !profile.nickname_set) && pathname !== NICKNAME_PATH) {
+    const isOnboardingPath = ONBOARDING_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
+
+    if ((!profile?.nickname || !profile.nickname_set) && !isOnboardingPath) {
       const url = req.nextUrl.clone()
-      url.pathname = NICKNAME_PATH
+      url.pathname = '/onboarding'
       return NextResponse.redirect(url)
     }
   }

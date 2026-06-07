@@ -22,12 +22,24 @@ export async function GET(request: Request) {
 
   const user = data.session?.user
 
+  if (user) {
+    await supabase.from('profiles').upsert(
+      {
+        id: user.id,
+        email: user.email ?? null,
+        nickname_set: false,
+        created_at: new Date().toISOString(),
+      },
+      { onConflict: 'id', ignoreDuplicates: true }
+    )
+  }
+
   if (next?.startsWith('/') && !next.startsWith('//')) {
     const { data: profile } = user
       ? await supabase.from('profiles').select('nickname, nickname_set').eq('id', user.id).maybeSingle()
       : { data: null }
 
-    return NextResponse.redirect(new URL(profile?.nickname && profile.nickname_set ? next : '/nickname', origin))
+    return NextResponse.redirect(new URL(profile?.nickname && profile.nickname_set ? next : '/onboarding', origin))
   }
 
   const { data: profile } = user
@@ -40,9 +52,9 @@ export async function GET(request: Request) {
 
   const destination =
     !profile?.nickname
-      ? '/nickname'
+      ? '/onboarding'
       : !profile.nickname_set
-      ? '/nickname'
+      ? '/onboarding'
       : profile?.village_id && profile?.avatar_type && profile?.match_category
       ? '/home'
       : '/onboarding'

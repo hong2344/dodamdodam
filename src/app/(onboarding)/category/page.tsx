@@ -40,7 +40,7 @@ export default function CategoryPage() {
     }
     if (res.status === 403) {
       window.localStorage.setItem('dodam:category', selected)
-      router.push('/home')
+      router.push('/nickname?next=/home')
       return
     }
     if (!res.ok || data?.ok === false) {
@@ -48,7 +48,7 @@ export default function CategoryPage() {
       return
     }
     window.localStorage.setItem('dodam:category', selected)
-    router.push('/matching')
+    router.push('/nickname?next=/matching')
   }
 
   useEffect(() => {
@@ -73,7 +73,7 @@ export default function CategoryPage() {
 
         <div className="flex justify-between items-center">
           <Link href="/avatar" className="font-mono text-[11px]">←</Link>
-          <Chip>STEP 03 / 03</Chip>
+          <Chip>STEP 03 / 04</Chip>
         </div>
 
         <div className="mt-6">

@@ -20,6 +20,16 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/login?error=oauth', origin))
   }
 
+  await supabase.from('profiles').upsert(
+    {
+      id: data.user.id,
+      email: data.user.email ?? null,
+      nickname_set: false,
+      created_at: new Date().toISOString(),
+    },
+    { onConflict: 'id', ignoreDuplicates: true }
+  )
+
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('nickname, nickname_set')
@@ -30,5 +40,5 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/login?error=profile', origin))
   }
 
-  return NextResponse.redirect(new URL(profile?.nickname && profile.nickname_set ? next : '/nickname', origin))
+  return NextResponse.redirect(new URL(profile?.nickname && profile.nickname_set ? next : '/onboarding', origin))
 }

@@ -57,7 +57,7 @@ export default function AvatarPage() {
 
         <div className="flex justify-between items-center">
           <Link href="/village" className="font-mono text-[11px]">←</Link>
-          <Chip>STEP 02 / 03</Chip>
+          <Chip>STEP 02 / 04</Chip>
         </div>
 
         <div className="mt-6">

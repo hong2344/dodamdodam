@@ -6,28 +6,21 @@ import { useState } from 'react'
 import Btn from '@/components/Btn'
 import Field from '@/components/Field'
 import { getSiteUrl } from '@/lib/auth/url'
-import { validateNickname } from '@/lib/profile/nickname'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignupPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
-  const [nickname, setNickname] = useState('')
   const [age, setAge] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleSignup = async () => {
     setError(null)
-    const nicknameValidation = validateNickname(nickname)
 
-    if (!email || !pw || !nickname || !age) {
-      setError('이메일, 비밀번호, 닉네임, 나이를 모두 입력해주세요.')
-      return
-    }
-    if (nicknameValidation.error) {
-      setError(nicknameValidation.error)
+    if (!email || !pw || !age) {
+      setError('이메일, 비밀번호, 나이를 모두 입력해주세요.')
       return
     }
     if (pw.length < 6) {
@@ -41,15 +34,6 @@ export default function SignupPage() {
       return
     }
     setLoading(true)
-
-    const nicknameCheck = await fetch(`/api/profile/nickname?value=${encodeURIComponent(nicknameValidation.nickname)}`)
-    if (!nicknameCheck.ok) {
-      const body = await nicknameCheck.json().catch(() => null)
-      setLoading(false)
-      setError(body?.error ?? '닉네임을 확인하지 못했어요.')
-      return
-    }
-
     const supabase = createClient()
 
     // 1) Supabase Auth로 가입
@@ -69,15 +53,13 @@ export default function SignupPage() {
     // 2) profiles 테이블에 row 추가
     const { error: profileError } = await supabase.from('profiles').insert({
       id: userId,
-      nickname: nicknameValidation.nickname,
-      nickname_set: true,
+      nickname_set: false,
       age: ageNum,
       created_at: new Date().toISOString(),
     })
     setLoading(false)
     if (profileError) {
-      const message = profileError.code === '23505' ? '이미 사용 중인 닉네임이에요.' : profileError.message
-      setError('프로필 생성 중 오류가 발생했어요: ' + message)
+      setError('프로필 생성 중 오류가 발생했어요: ' + profileError.message)
       return
     }
 
@@ -91,7 +73,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
       options: {
-        redirectTo: getSiteUrl('/api/auth/callback?next=/nickname'),
+        redirectTo: getSiteUrl('/api/auth/callback?next=/onboarding'),
       },
     })
     setLoading(false)
@@ -124,7 +106,6 @@ export default function SignupPage() {
         <div className="mt-6 flex flex-col gap-[10px]">
           <Field placeholder="이메일" type="email" value={email} onChange={e => setEmail(e.target.value)} />
           <Field placeholder="비밀번호 (6자 이상)" type="password" value={pw} onChange={e => setPw(e.target.value)} />
-          <Field placeholder="닉네임" value={nickname} onChange={e => setNickname(e.target.value)} />
           <Field placeholder="나이 (만 14~19세)" type="number" value={age} onChange={e => setAge(e.target.value)} />
           {error && (
             <p className="text-[12px] text-red-600 mt-1">{error}</p>

@@ -385,7 +385,20 @@ export default function HomePage() {
           </div>
         )}
 
-        <div className="px-[20px] flex justify-end absolute" style={{ bottom: 20, right: 0 }}>
+        <div className="px-[20px] flex justify-between items-center absolute left-0 right-0" style={{ bottom: 20 }}>
+          <button
+            onClick={() => router.push('/compose')}
+            className="px-4 py-[10px] rounded-[14px] text-[12px] font-semibold cursor-pointer flex items-center gap-1.5"
+            style={{
+              background: 'rgba(255,255,255,0.88)',
+              color: '#00643E',
+              textShadow: 'none',
+              border: '1px solid #E0D9C7',
+              boxShadow: '0 4px 14px -10px rgba(0,0,0,0.35)',
+            }}
+          >
+            편지 쓰기
+          </button>
           <div
             className="relative px-4 py-[10px] rounded-[14px] text-[12px] font-semibold cursor-pointer flex items-center gap-1.5"
             style={{

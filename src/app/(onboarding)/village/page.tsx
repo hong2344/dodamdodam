@@ -81,7 +81,7 @@ export default function VillagePage() {
 
         <div className="flex justify-between items-center">
           <Link href="/onboarding" className="font-mono text-[11px]">←</Link>
-          <Chip>STEP 01 / 03</Chip>
+          <Chip>STEP 01 / 04</Chip>
         </div>
 
         <div className="mt-6">
