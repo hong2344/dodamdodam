@@ -39,7 +39,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
       options: {
-        redirectTo: `${window.location.origin}/api/auth/callback?next=/home`,
+        redirectTo: `${window.location.origin}/api/auth/kakao/callback?next=/home`,
       },
     })
     setLoading(false)
