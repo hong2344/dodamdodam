@@ -44,21 +44,26 @@ export default function MailboxPage() {
       // 받은 편지
       const { data: receivedLetters } = await supabase
         .from('letters')
-        .select('id, sender_id, content, sent_at, read_at')
+        .select('id, sender_id, sender_type, sender_display_name, content, sent_at, read_at')
         .eq('receiver_id', user.id)
+        .lte('sent_at', new Date().toISOString())
         .order('sent_at', { ascending: false })
 
       // 보낸 편지
       const { data: sentLetters } = await supabase
         .from('letters')
-        .select('id, receiver_id, content, sent_at')
+        .select('id, receiver_id, receiver_type, receiver_display_name, content, sent_at')
         .eq('sender_id', user.id)
         .order('sent_at', { ascending: false })
 
       // 대화 상대 프로필 일괄 조회
       const partnerIds = new Set<string>()
-      receivedLetters?.forEach(l => partnerIds.add(l.sender_id))
-      sentLetters?.forEach(l => partnerIds.add(l.receiver_id))
+      receivedLetters?.forEach(l => {
+        if (l.sender_id) partnerIds.add(l.sender_id)
+      })
+      sentLetters?.forEach(l => {
+        if (l.receiver_id) partnerIds.add(l.receiver_id)
+      })
 
       let profilesMap: Record<string, { avatar_type: number | null; nickname: string | null }> = {}
       if (partnerIds.size > 0) {
@@ -71,13 +76,29 @@ export default function MailboxPage() {
         })
       }
 
-      const mapItem = (sender_id: string, l: { id: string; content: string; sent_at: string; read_at?: string | null }, isReceived: boolean): LetterItem => {
-        const pid = isReceived ? sender_id : sender_id // 'sender_id' here is actually the partner id passed in
+      const mapItem = (
+        partnerId: string | null,
+        l: {
+          id: string
+          content: string
+          sent_at: string
+          read_at?: string | null
+          sender_type?: string | null
+          receiver_type?: string | null
+          sender_display_name?: string | null
+          receiver_display_name?: string | null
+        },
+        isReceived: boolean
+      ): LetterItem => {
+        const isAi = isReceived ? l.sender_type === 'ai' : l.receiver_type === 'ai'
+        const pid = partnerId ?? ''
         const p = profilesMap[pid] || {}
         return {
           id: l.id,
-          partnerAvatar: AVATAR_MAP[p.avatar_type ?? 1] ?? 'cat',
-          partnerNickname: p.nickname ?? '친구',
+          partnerAvatar: isAi ? 'rabbit' : AVATAR_MAP[p.avatar_type ?? 1] ?? 'cat',
+          partnerNickname:
+            (isReceived ? l.sender_display_name : l.receiver_display_name) ??
+            (isAi ? 'AI 마음친구' : p.nickname ?? '친구'),
           preview: l.content,
           date: formatDate(l.sent_at),
           unread: isReceived ? !l.read_at : false,

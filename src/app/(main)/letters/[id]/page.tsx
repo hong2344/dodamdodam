@@ -50,8 +50,9 @@ export default function ReadLetterPage() {
 
       const { data: letter, error: letterErr } = await supabase
         .from('letters')
-        .select('id, sender_id, receiver_id, content, sent_at, read_at')
+        .select('id, sender_id, receiver_id, sender_type, receiver_type, sender_display_name, receiver_display_name, content, sent_at, read_at')
         .eq('id', letterId)
+        .lte('sent_at', new Date().toISOString())
         .maybeSingle()
 
       if (letterErr || !letter) {
@@ -61,14 +62,17 @@ export default function ReadLetterPage() {
       }
 
       // 발신/수신 프로필 일괄 조회
+      const profileIds = [letter.sender_id, letter.receiver_id].filter((id): id is string => typeof id === 'string')
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, avatar_type, nickname')
-        .in('id', [letter.sender_id, letter.receiver_id])
+        .in('id', profileIds)
 
       const sender = profiles?.find(p => p.id === letter.sender_id)
       const receiver = profiles?.find(p => p.id === letter.receiver_id)
       const isIncoming = letter.receiver_id === user.id
+      const isAiSender = letter.sender_type === 'ai'
+      const isAiReceiver = letter.receiver_type === 'ai'
 
       // 받은 편지를 처음 읽는 경우 read_at 업데이트
       if (isIncoming && !letter.read_at) {
@@ -82,10 +86,10 @@ export default function ReadLetterPage() {
         content: letter.content,
         sent_at: letter.sent_at,
         read_at: letter.read_at,
-        senderAvatar: AVATAR_MAP[sender?.avatar_type ?? 1] ?? 'cat',
-        senderName: sender?.nickname ?? '친구',
-        receiverAvatar: AVATAR_MAP[receiver?.avatar_type ?? 1] ?? 'cat',
-        receiverName: isIncoming ? '나' : (receiver?.nickname ?? '친구'),
+        senderAvatar: isAiSender ? 'rabbit' : AVATAR_MAP[sender?.avatar_type ?? 1] ?? 'cat',
+        senderName: isAiSender ? (letter.sender_display_name ?? 'AI 마음친구') : sender?.nickname ?? '친구',
+        receiverAvatar: isAiReceiver ? 'rabbit' : AVATAR_MAP[receiver?.avatar_type ?? 1] ?? 'cat',
+        receiverName: isIncoming ? '나' : isAiReceiver ? (letter.receiver_display_name ?? 'AI 마음친구') : (receiver?.nickname ?? '친구'),
         isIncoming,
       })
       setLoading(false)

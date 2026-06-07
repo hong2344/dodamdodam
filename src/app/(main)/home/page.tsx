@@ -208,6 +208,8 @@ export default function HomePage() {
           .from('letters')
           .select('sender_id, sent_at, read_at')
           .eq('match_id', match.id)
+          .eq('sender_type', 'user')
+          .lte('sent_at', new Date().toISOString())
           .order('sent_at', { ascending: false })
           .limit(1)
           .maybeSingle()
@@ -335,7 +337,7 @@ export default function HomePage() {
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, margin: '4px 0 0', fontWeight: 400, color: textColor, textShadow }}>{v.name} 마을</h2>
         </div>
 
-        {showBanner && data.partnerAvatar && (
+        {showBanner && data.partnerAvatar ? (
           <div
             className="mx-[18px] bg-white/85 border border-[#E0D9C7] rounded-[14px] flex items-center gap-[10px] cursor-pointer"
             style={{ color: '#1A1816', marginTop: 30, padding: '13px 12px' }}
@@ -345,6 +347,19 @@ export default function HomePage() {
             <div className="flex-1 text-[11.5px] leading-[1.35]">
               <strong className="text-[#00643E]">매칭 완료</strong>
               <div className="text-[10.5px] text-[#5C544A]">편지를 작성하려면 여기를 클릭하세요</div>
+            </div>
+            <span className="font-mono text-[16px] text-[#00643E]">→</span>
+          </div>
+        ) : (
+          <div
+            className="mx-[18px] bg-white/85 border border-[#E0D9C7] rounded-[14px] flex items-center gap-[10px] cursor-pointer"
+            style={{ color: '#1A1816', marginTop: 30, padding: '13px 12px' }}
+            onClick={() => router.push('/compose')}
+          >
+            <Avatar kind="rabbit" size={36} />
+            <div className="flex-1 text-[11.5px] leading-[1.35]">
+              <strong className="text-[#00643E]">편지 쓰기</strong>
+              <div className="text-[10.5px] text-[#5C544A]">매칭 전에도 편지를 쓰면 답장이 도착해요</div>
             </div>
             <span className="font-mono text-[16px] text-[#00643E]">→</span>
           </div>

@@ -71,6 +71,9 @@ export default function ComposePage() {
           if (p.avatar_type) setPartnerAvatar(AVATAR_MAP[p.avatar_type] ?? 'bear')
           if (p.nickname) setPartnerNickname(p.nickname)
         }
+      } else {
+        setPartnerAvatar('bear')
+        setPartnerNickname('마음친구')
       }
       setLoading(false)
     })()
@@ -81,22 +84,22 @@ export default function ComposePage() {
       setError('편지는 10자 이상 작성해주세요.')
       return
     }
-    if (!matchId || !myUserId || !partnerId) {
-      setError('매칭 정보를 찾을 수 없어요.')
+    if (!myUserId) {
+      setError('로그인이 필요해요.')
       return
     }
     setSending(true)
     setError(null)
-    const supabase = createClient()
-    const { error: insertErr } = await supabase.from('letters').insert({
-      match_id: matchId,
-      sender_id: myUserId,
-      receiver_id: partnerId,
-      content: text.trim(),
+    const response = await fetch('/api/letters', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: text.trim() }),
     })
     setSending(false)
-    if (insertErr) {
-      setError('편지 전송에 실패했어요: ' + insertErr.message)
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      setError('편지 전송에 실패했어요: ' + (body?.error || response.status))
       return
     }
     router.push('/sent')
@@ -131,6 +134,12 @@ export default function ComposePage() {
             <span className="text-[12px] font-medium">{partnerNickname}</span>
           </div>
         </div>
+
+        {!matchId && (
+          <p className="mt-3 text-center text-[12px] leading-relaxed text-[#5C544A]">
+            아직 매칭 친구가 없어도 괜찮아요. 편지를 쓰면 답장이 도착해요.
+          </p>
+        )}
 
         <div
           className="mt-6 flex-1 relative rounded-[14px] overflow-hidden"
