@@ -23,6 +23,7 @@ export async function GET(request: Request) {
   const user = data.session?.user
 
   if (user) {
+    // 닉네임은 온보딩 step 4에서 사용자가 직접 설정 — 실명이 자동으로 들어오지 않도록 카카오 메타데이터 사용 안 함
     await supabase.from('profiles').upsert(
       {
         id: user.id,

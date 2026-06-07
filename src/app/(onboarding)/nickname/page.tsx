@@ -85,6 +85,7 @@ export default function NicknamePage() {
   return (
     <div className="min-h-dvh bg-[#F5F0E6] flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 'min(680px, calc(100dvh - 6rem))' }}>
+
         <div className="flex justify-between items-center">
           <button onClick={() => router.push('/category')} className="font-mono text-[11px]">←</button>
           <Chip>STEP 04 / 04</Chip>
@@ -97,27 +98,34 @@ export default function NicknamePage() {
             <em style={{ color: '#00643E', fontStyle: 'italic' }}>설정해주세요.</em>
           </h2>
           <p className="mt-4 text-[13.5px] leading-relaxed text-[#5C544A]">
-            여기서 정한 닉네임이 편지, 우편함, 매칭 화면에서 활동할 때 나타나는 이름이에요. 다른 사용자와 같은 닉네임은 사용할 수 없어요.
+            편지, 우편함, 매칭 화면에 표시되는 이름이에요. 다른 사용자와 중복 사용할 수 없어요.
           </p>
         </div>
 
         <div className="mt-8 flex flex-col gap-[10px]">
           <Field
-            placeholder="닉네임"
+            placeholder="닉네임 (2~12자, 한글·영문·숫자)"
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
+            maxLength={12}
           />
-          <p className="text-[11px] leading-relaxed text-[#5C544A]">
-            한글, 영문, 숫자만 가능해요.
-          </p>
+
+          <div
+            className="p-3 rounded-[10px] text-[12px] leading-relaxed text-[#5C544A]"
+            style={{ background: 'rgba(0,100,62,0.06)', border: '1px solid rgba(0,100,62,0.15)' }}
+          >
+            💡 도담도담은 <strong>익명</strong> 서비스예요. 실명·학교명·반 정보처럼 신원을 알 수 있는 이름은 사용하지 마세요.
+          </div>
+
           {error && <p className="text-[12px] text-red-600">{error}</p>}
         </div>
 
-        <div className="mt-auto">
+        <div className="mt-auto pt-4">
           <Btn onClick={handleSave} disabled={checking || saving}>
             {saving ? '저장 중…' : '닉네임 저장하기 →'}
           </Btn>
         </div>
+
       </div>
     </div>
   )

@@ -18,7 +18,6 @@ export default function SignupPage() {
 
   const handleSignup = async () => {
     setError(null)
-
     if (!email || !pw || !age) {
       setError('이메일, 비밀번호, 나이를 모두 입력해주세요.')
       return
@@ -50,7 +49,7 @@ export default function SignupPage() {
       return
     }
 
-    // 2) profiles 테이블에 row 추가
+    // 2) profiles 테이블에 row 추가 (닉네임은 온보딩 step 4에서 설정)
     const { error: profileError } = await supabase.from('profiles').insert({
       id: userId,
       nickname_set: false,
@@ -69,6 +68,7 @@ export default function SignupPage() {
   const handleKakaoSignup = async () => {
     setError(null)
     setLoading(true)
+
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',

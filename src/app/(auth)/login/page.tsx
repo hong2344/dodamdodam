@@ -36,6 +36,7 @@ export default function LoginPage() {
   const handleKakaoLogin = async () => {
     setError(null)
     setLoading(true)
+
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
