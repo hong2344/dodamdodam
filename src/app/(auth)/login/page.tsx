@@ -6,6 +6,7 @@ import Flower from '@/components/Flower'
 import Field from '@/components/Field'
 import Btn from '@/components/Btn'
 import { useState } from 'react'
+import { getSiteUrl } from '@/lib/auth/url'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
@@ -39,7 +40,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
       options: {
-        redirectTo: `${window.location.origin}/api/auth/kakao/callback?next=/home`,
+        redirectTo: getSiteUrl('/api/auth/callback?next=/home'),
       },
     })
     setLoading(false)

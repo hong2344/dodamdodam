@@ -24,9 +24,53 @@ type PushNotificationState = {
 
 const DEFAULT_SUBSCRIBE_URL = '/api/push/subscribe';
 
+function waitForActiveRegistration(registration: ServiceWorkerRegistration) {
+  if (registration.active) {
+    return Promise.resolve(registration);
+  }
+
+  const worker = registration.installing || registration.waiting;
+
+  if (!worker) {
+    return navigator.serviceWorker.ready;
+  }
+
+  const pendingWorker = worker;
+
+  return new Promise<ServiceWorkerRegistration>((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      pendingWorker.removeEventListener('statechange', handleStateChange);
+      reject(new Error('서비스워커 활성화가 지연되고 있습니다. 새로고침 후 다시 시도해주세요.'));
+    }, 10_000);
+
+    function handleStateChange() {
+      if (pendingWorker.state === 'activated') {
+        window.clearTimeout(timeout);
+        pendingWorker.removeEventListener('statechange', handleStateChange);
+        resolve(registration);
+      } else if (pendingWorker.state === 'redundant') {
+        window.clearTimeout(timeout);
+        pendingWorker.removeEventListener('statechange', handleStateChange);
+        reject(new Error('서비스워커 등록이 만료되었습니다. 새로고침 후 다시 시도해주세요.'));
+      }
+    }
+
+    pendingWorker.addEventListener('statechange', handleStateChange);
+    handleStateChange();
+  });
+}
+
 async function registerAndWaitForActiveServiceWorker() {
-  await navigator.serviceWorker.register('/sw.js');
-  return navigator.serviceWorker.ready;
+  const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+  await registration.update().catch(() => undefined);
+  await waitForActiveRegistration(registration);
+
+  const readyRegistration = await navigator.serviceWorker.ready;
+  if (!readyRegistration.active) {
+    throw new Error('활성화된 서비스워커를 찾지 못했습니다. 새로고침 후 다시 시도해주세요.');
+  }
+
+  return readyRegistration;
 }
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -76,7 +120,7 @@ export function usePushNotification(
     let cancelled = false;
     (async () => {
       try {
-        const registration = await navigator.serviceWorker.getRegistration();
+        const registration = await registerAndWaitForActiveServiceWorker();
         const existing = registration ? await registration.pushManager.getSubscription() : null;
         if (!cancelled) setSubscription(existing);
       } catch {
@@ -117,6 +161,10 @@ export function usePushNotification(
       }
 
       const registration = await registerAndWaitForActiveServiceWorker();
+      if (!registration.active) {
+        throw new Error('활성화된 서비스워커를 찾지 못했습니다. 새로고침 후 다시 시도해주세요.');
+      }
+
       const existingSubscription = await registration.pushManager.getSubscription();
       const nextSubscription =
         existingSubscription ||
@@ -160,7 +208,7 @@ export function usePushNotification(
     setIsLoading(true);
 
     try {
-      const registration = await navigator.serviceWorker.getRegistration();
+      const registration = await registerAndWaitForActiveServiceWorker();
       const existing = registration ? await registration.pushManager.getSubscription() : null;
 
       if (!existing) {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Btn from '@/components/Btn'
 import Field from '@/components/Field'
+import { getSiteUrl } from '@/lib/auth/url'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignupPage() {
@@ -72,7 +73,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
       options: {
-        redirectTo: `${window.location.origin}/api/auth/kakao/callback?next=/onboarding`,
+        redirectTo: getSiteUrl('/api/auth/callback?next=/onboarding'),
       },
     })
     setLoading(false)

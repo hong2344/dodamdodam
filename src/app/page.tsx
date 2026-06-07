@@ -11,7 +11,7 @@ export default async function RootPage({ searchParams }: RootPageProps) {
   const params = await searchParams
 
   if (params?.code) {
-    const callbackUrl = new URL('/api/auth/kakao/callback', 'http://localhost')
+    const callbackUrl = new URL('/api/auth/callback', 'http://localhost')
     callbackUrl.searchParams.set('code', params.code)
 
     if (params.next) {
