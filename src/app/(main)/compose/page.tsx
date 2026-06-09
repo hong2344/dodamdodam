@@ -27,8 +27,16 @@ export default function ComposePage() {
   const [partnerAvatar, setPartnerAvatar] = useState<AvatarType>('bear')
   const [partnerNickname, setPartnerNickname] = useState('친구')
   const [myUserId, setMyUserId] = useState<string | null>(null)
-  const [partnerId, setPartnerId] = useState<string | null>(null)
   const [matchId, setMatchId] = useState<string | null>(null)
+  // 내가 보낸 편지가 아직 가는 중이면 도착 시각(ms). 그동안 새 편지 전송 차단.
+  const [blockedArrivalAt, setBlockedArrivalAt] = useState<number | null>(null)
+  const [now, setNow] = useState<number>(() => Date.now())
+
+  // 차단 남은 시간 카운트다운(도착하면 자동 해제)
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 1_000)
+    return () => window.clearInterval(t)
+  }, [])
 
   useEffect(() => {
     (async () => {
@@ -61,7 +69,6 @@ export default function ComposePage() {
       if (match) {
         setMatchId(match.id)
         const pid = match.user_a_id === user.id ? match.user_b_id : match.user_a_id
-        setPartnerId(pid)
         const { data: p } = await supabase
           .from('profiles')
           .select('avatar_type, nickname')
@@ -71,15 +78,46 @@ export default function ComposePage() {
           if (p.avatar_type) setPartnerAvatar(AVATAR_MAP[p.avatar_type] ?? 'bear')
           if (p.nickname) setPartnerNickname(p.nickname)
         }
+
+        // 내가 보낸 편지가 아직 가는 중(도착 전)이면 전송 차단
+        const { data: pending } = await supabase
+          .from('letters')
+          .select('sent_at')
+          .eq('match_id', match.id)
+          .eq('sender_id', user.id)
+          .eq('receiver_type', 'user')
+          .gt('sent_at', new Date().toISOString())
+          .order('sent_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (pending?.sent_at) setBlockedArrivalAt(new Date(pending.sent_at + 'Z').getTime())
       } else {
-        setPartnerAvatar('bear')
-        setPartnerNickname('마음친구')
+        // 매칭된 사람이 없으면 AI 마음친구와의 대화
+        setPartnerAvatar('ai')
+        setPartnerNickname('AI 마음친구')
+
+        // 내가 AI에게 보낸 편지가 아직 가는 중(도착 전)이면 전송 차단
+        const { data: pending } = await supabase
+          .from('letters')
+          .select('sent_at')
+          .is('match_id', null)
+          .eq('sender_id', user.id)
+          .eq('receiver_type', 'ai')
+          .gt('sent_at', new Date().toISOString())
+          .order('sent_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (pending?.sent_at) setBlockedArrivalAt(new Date(pending.sent_at + 'Z').getTime())
       }
       setLoading(false)
     })()
   }, [])
 
   const handleSend = async () => {
+    if (blockedArrivalAt && Date.now() < blockedArrivalAt) {
+      setError('편지가 아직 가는 중이에요. 도착한 뒤에 보낼 수 있어요.')
+      return
+    }
     if (text.trim().length < 10) {
       setError('편지는 10자 이상 작성해주세요.')
       return
@@ -97,12 +135,19 @@ export default function ComposePage() {
     })
     setSending(false)
 
+    const body = await response.json().catch(() => null)
     if (!response.ok) {
-      const body = await response.json().catch(() => null)
+      // 서버 가드: 이전 편지가 아직 도착 전이면 차단
+      if (response.status === 409 && body?.code === 'letter_in_transit') {
+        if (body.arrivalAt) setBlockedArrivalAt(new Date(body.arrivalAt + 'Z').getTime())
+        setError('편지가 아직 가는 중이에요. 도착한 뒤에 보낼 수 있어요.')
+        return
+      }
       setError('편지 전송에 실패했어요: ' + (body?.error || response.status))
       return
     }
-    router.push('/sent')
+    // AI 답장이 생성됐으면(매칭 후 첫 편지/매칭 전) sent 화면에서 1시간 뒤 도착 안내
+    router.push(body?.aiReplyCreated ? '/sent?ai=1' : '/sent')
   }
 
   if (loading) {
@@ -112,6 +157,16 @@ export default function ComposePage() {
       </div>
     )
   }
+
+  const isBlocked = blockedArrivalAt !== null && now < blockedArrivalAt
+  const remainText = (() => {
+    if (!blockedArrivalAt) return ''
+    const ms = blockedArrivalAt - now
+    if (ms <= 0) return ''
+    const h = Math.floor(ms / 3_600_000)
+    const m = Math.floor((ms % 3_600_000) / 60_000)
+    return h > 0 ? `약 ${h}시간 ${m}분 뒤 도착` : `약 ${m}분 뒤 도착`
+  })()
 
   return (
     <div className="min-h-dvh bg-[#F5F0E6] flex items-center justify-center px-6 py-12">
@@ -135,10 +190,19 @@ export default function ComposePage() {
           </div>
         </div>
 
-        {!matchId && (
+        {!matchId && !isBlocked && (
           <p className="mt-3 text-center text-[12px] leading-relaxed text-[#5C544A]">
             아직 매칭 친구가 없어도 괜찮아요. 편지를 쓰면 답장이 도착해요.
           </p>
+        )}
+
+        {isBlocked && (
+          <div className="mt-4 mx-1 rounded-[12px] bg-white/70 border border-[#E0D9C7] px-4 py-3 text-center">
+            <p className="text-[12.5px] font-semibold text-[#00643E]">편지가 가는 중이에요</p>
+            <p className="mt-1 text-[11px] text-[#5C544A] leading-relaxed">
+              {partnerNickname} 님께 보낸 편지가 도착하면<br />새 편지를 보낼 수 있어요. {remainText && `(${remainText})`}
+            </p>
+          </div>
         )}
 
         <div
@@ -162,7 +226,8 @@ export default function ComposePage() {
             value={text}
             onChange={e => setText(e.target.value.slice(0, 1000))}
             maxLength={1000}
-            className="absolute inset-0 w-full h-full bg-transparent border-none outline-none resize-none text-[#1A1816] p-[20px_18px]"
+            disabled={isBlocked}
+            className="absolute inset-0 w-full h-full bg-transparent border-none outline-none resize-none text-[#1A1816] p-[20px_18px] disabled:opacity-50"
             style={{ fontFamily: 'var(--font-display)', fontSize: 14.5, lineHeight: '28px' }}
           />
           <span className="absolute bottom-[10px] right-[14px] font-mono text-[10px] opacity-50">{text.length} / 1000</span>
@@ -171,8 +236,8 @@ export default function ComposePage() {
         {error && <p className="mt-2 text-[12px] text-red-600">{error}</p>}
 
         <div className="mt-4">
-          <Btn disabled={text.trim().length < 10 || sending} onClick={handleSend}>
-            {sending ? '보내는 중…' : '보내기 →'}
+          <Btn disabled={isBlocked || text.trim().length < 10 || sending} onClick={handleSend}>
+            {sending ? '보내는 중…' : isBlocked ? '편지가 가는 중…' : '보내기 →'}
           </Btn>
         </div>
 

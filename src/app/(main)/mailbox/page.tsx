@@ -18,7 +18,10 @@ interface LetterItem {
   preview: string
   date: string
   unread: boolean
+  isAi: boolean
 }
+
+type PartnerFilter = 'all' | 'human' | 'ai'
 
 function formatDate(iso: string): string {
   const d = new Date(iso)
@@ -30,6 +33,7 @@ function formatDate(iso: string): string {
 
 export default function MailboxPage() {
   const [tab, setTab] = useState<'received' | 'sent'>('received')
+  const [partnerFilter, setPartnerFilter] = useState<PartnerFilter>('all')
   const [received, setReceived] = useState<LetterItem[]>([])
   const [sent, setSent] = useState<LetterItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -95,13 +99,14 @@ export default function MailboxPage() {
         const p = profilesMap[pid] || {}
         return {
           id: l.id,
-          partnerAvatar: isAi ? 'rabbit' : AVATAR_MAP[p.avatar_type ?? 1] ?? 'cat',
+          partnerAvatar: isAi ? 'ai' : AVATAR_MAP[p.avatar_type ?? 1] ?? 'cat',
           partnerNickname:
             (isReceived ? l.sender_display_name : l.receiver_display_name) ??
             (isAi ? 'AI 마음친구' : p.nickname ?? '친구'),
           preview: l.content,
           date: formatDate(l.sent_at),
           unread: isReceived ? !l.read_at : false,
+          isAi,
         }
       }
 
@@ -111,7 +116,10 @@ export default function MailboxPage() {
     })()
   }, [])
 
-  const list = tab === 'received' ? received : sent
+  const baseList = tab === 'received' ? received : sent
+  const list = baseList.filter(item =>
+    partnerFilter === 'all' ? true : partnerFilter === 'ai' ? item.isAi : !item.isAi,
+  )
 
   return (
     <div className="min-h-dvh bg-[#F5F0E6] flex items-center justify-center px-0 py-12">
@@ -148,12 +156,43 @@ export default function MailboxPage() {
           ))}
         </div>
 
+        <div className="mt-3 px-6 flex gap-[7px]">
+          {([
+            ['all', '전체'],
+            ['human', '사람친구'],
+            ['ai', 'AI'],
+          ] as const).map(([key, lbl]) => {
+            const active = partnerFilter === key
+            return (
+              <button
+                key={key}
+                onClick={() => setPartnerFilter(key)}
+                className="px-[11px] py-[5px] rounded-full text-[11.5px] cursor-pointer transition-colors"
+                style={{
+                  background: active ? '#00643E' : 'transparent',
+                  color: active ? '#FFFFFF' : '#5C544A',
+                  border: `1px solid ${active ? '#00643E' : '#E0D9C7'}`,
+                  fontWeight: active ? 600 : 400,
+                }}
+              >
+                {lbl}
+              </button>
+            )
+          })}
+        </div>
+
         <div className="flex-1 px-4 py-[10px] flex flex-col gap-[6px] overflow-y-auto">
           {loading ? (
             <p className="text-center mt-6 text-[13px] text-[#5C544A]">불러오는 중…</p>
           ) : list.length === 0 ? (
             <p className="text-center mt-8 text-[13px] text-[#5C544A]">
-              {tab === 'received' ? '아직 받은 편지가 없어요.' : '아직 보낸 편지가 없어요.'}
+              {partnerFilter === 'ai'
+                ? 'AI 마음친구와 주고받은 편지가 없어요.'
+                : partnerFilter === 'human'
+                  ? '사람친구와 주고받은 편지가 없어요.'
+                  : tab === 'received'
+                    ? '아직 받은 편지가 없어요.'
+                    : '아직 보낸 편지가 없어요.'}
             </p>
           ) : (
             list.map((item) => (

@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Avatar from '@/components/Avatar'
 import Btn from '@/components/Btn'
 import Chip from '@/components/Chip'
@@ -13,7 +13,17 @@ const AVATAR_MAP: Record<number, AvatarType> = {
 }
 
 export default function SentPage() {
+  return (
+    <Suspense fallback={null}>
+      <SentContent />
+    </Suspense>
+  )
+}
+
+function SentContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const aiReplyComing = searchParams?.get('ai') === '1'
   const [myAvatar, setMyAvatar] = useState<AvatarType>('rabbit')
   const [partnerAvatar, setPartnerAvatar] = useState<AvatarType>('bear')
   const [partnerNickname, setPartnerNickname] = useState('친구')
@@ -47,9 +57,8 @@ export default function SentPage() {
     <div className="min-h-dvh flex items-center justify-center px-6 py-12" style={{ background: 'linear-gradient(180deg,#CFE0E8 0%,#F0E8C8 100%)' }}>
       <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 'min(680px, calc(100dvh - 6rem))' }}>
 
-        <div className="flex justify-between items-center">
+        <div className="flex items-center">
           <Chip>DELIVERY STARTED</Chip>
-          <span className="font-mono text-[10px] opacity-60">EST. 03:00:00</span>
         </div>
 
         {/* 마을 일러스트 */}
@@ -102,6 +111,16 @@ export default function SentPage() {
             </div>
           </div>
         </div>
+
+        {aiReplyComing && (
+          <div className="mt-5 mx-1 rounded-[12px] bg-white/75 border border-[#E0D9C7] px-4 py-3 flex items-center gap-[10px]">
+            <Avatar kind="ai" size={32} />
+            <p className="text-[11.5px] leading-[1.4] text-[#5C544A]">
+              <strong className="text-[#00643E]">AI 마음친구</strong>의 답장도
+              <strong className="text-[#00643E]"> 약 1시간 뒤</strong> 편지집에 도착해요.
+            </p>
+          </div>
+        )}
 
         <div className="mt-6">
           <Btn onClick={() => router.push('/home')}>홈화면으로 이동</Btn>

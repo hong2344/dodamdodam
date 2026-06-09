@@ -41,6 +41,41 @@ export async function POST(request: Request) {
       : match.user_a_id
     : null
 
+  // 보낸 편지가 아직 운행 중(도착 전)이면 새 편지를 막는다.
+  // (내가 보낸 버스가 도착해야 다음 편지를 보낼 수 있음)
+  // - 매칭 후: 상대(user)에게 가는 편지 기준
+  // - 매칭 전: AI에게 가는 편지 기준 (매칭 전에도 한 통씩 버스로 오감)
+  {
+    const pendingQuery = admin
+      .from('letters')
+      .select('id, sent_at')
+      .eq('sender_id', user.id)
+      .eq('receiver_type', partnerId ? 'user' : 'ai')
+      .gt('sent_at', new Date().toISOString())
+      .order('sent_at', { ascending: false })
+      .limit(1)
+    if (partnerId) pendingQuery.eq('match_id', match!.id)
+    else pendingQuery.is('match_id', null)
+    const { data: pending } = await pendingQuery.maybeSingle()
+    if (pending) {
+      return NextResponse.json(
+        {
+          error: '편지가 아직 가는 중이에요. 도착한 뒤에 새 편지를 보낼 수 있어요.',
+          code: 'letter_in_transit',
+          arrivalAt: pending.sent_at,
+        },
+        { status: 409 },
+      )
+    }
+  }
+
+  // sent_at = 도착(arrival) 시각. 매칭 상대에게 가는 편지는 3시간, AI 관련 편지는 1시간 뒤 도착.
+  const HUMAN_DELIVERY_MS = 3 * 60 * 60 * 1000
+  const AI_DELIVERY_MS = 60 * 60 * 1000
+  const userArrivalAt = new Date(
+    Date.now() + (partnerId ? HUMAN_DELIVERY_MS : AI_DELIVERY_MS),
+  ).toISOString()
+
   const { data: sentLetter, error: sentError } = await admin
     .from('letters')
     .insert({
@@ -51,6 +86,7 @@ export async function POST(request: Request) {
       receiver_type: partnerId ? 'user' : 'ai',
       receiver_display_name: partnerId ? null : 'AI 마음친구',
       content: letterContent,
+      sent_at: userArrivalAt,
     })
     .select('id')
     .single()
@@ -59,25 +95,43 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: sentError?.message || '편지 전송에 실패했어요.' }, { status: 500 })
   }
 
-  const aiContent = await generateAiLetterReply(letterContent)
-  const aiArrivalAt = new Date(Date.now() + 60 * 60 * 1000).toISOString()
-  const { error: aiError } = await admin
-    .from('letters')
-    .insert({
-      match_id: match?.id ?? null,
-      sender_id: null,
-      receiver_id: user.id,
-      sender_type: 'ai',
-      receiver_type: 'user',
-      sender_display_name: 'AI 마음친구',
-      original_letter_id: sentLetter.id,
-      content: aiContent,
-      sent_at: aiArrivalAt,
-    })
-
-  if (aiError) {
-    return NextResponse.json({ error: aiError.message }, { status: 500 })
+  // AI 답장 여부 결정
+  // - 매칭 전: 항상 답장 (AI와 자유롭게 주고받음)
+  // - 매칭 후: 그 매칭에서 내가 보낸 '첫 번째' 편지에만 1회 답장
+  let shouldAiReply = true
+  if (partnerId) {
+    const { count } = await admin
+      .from('letters')
+      .select('id', { count: 'exact', head: true })
+      .eq('match_id', match!.id)
+      .eq('sender_id', user.id)
+      .eq('sender_type', 'user')
+      .neq('id', sentLetter.id)
+    shouldAiReply = (count ?? 0) === 0
   }
 
-  return NextResponse.json({ ok: true, letterId: sentLetter.id, aiReplyCreated: true, aiArrivalAt, matched: !!match })
+  let aiArrivalAt: string | null = null
+  if (shouldAiReply) {
+    const aiContent = await generateAiLetterReply(letterContent)
+    aiArrivalAt = new Date(Date.now() + AI_DELIVERY_MS).toISOString()
+    const { error: aiError } = await admin
+      .from('letters')
+      .insert({
+        match_id: match?.id ?? null,
+        sender_id: null,
+        receiver_id: user.id,
+        sender_type: 'ai',
+        receiver_type: 'user',
+        sender_display_name: 'AI 마음친구',
+        original_letter_id: sentLetter.id,
+        content: aiContent,
+        sent_at: aiArrivalAt,
+      })
+
+    if (aiError) {
+      return NextResponse.json({ error: aiError.message }, { status: 500 })
+    }
+  }
+
+  return NextResponse.json({ ok: true, letterId: sentLetter.id, aiReplyCreated: shouldAiReply, aiArrivalAt, matched: !!match })
 }

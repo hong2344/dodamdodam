@@ -2,7 +2,7 @@
 -- Existing blank nicknames are backfilled, and duplicate existing nicknames are made unique
 -- before the constraints are applied.
 update public.profiles
-set nickname = 'user_' || left(id::text, 8)
+set nickname = 'user' || left(id::text, 8)
 where nickname is null or btrim(nickname) = '';
 
 update public.profiles
@@ -11,7 +11,7 @@ where char_length(regexp_replace(btrim(nickname), '\s+', '', 'g')) > 12
    or nickname <> regexp_replace(btrim(nickname), '\s+', '', 'g');
 
 update public.profiles
-set nickname = 'user_' || left(id::text, 8)
+set nickname = 'user' || left(id::text, 8)
 where char_length(btrim(nickname)) < 2;
 
 with duplicated as (

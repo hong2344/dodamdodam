@@ -86,9 +86,9 @@ export default function ReadLetterPage() {
         content: letter.content,
         sent_at: letter.sent_at,
         read_at: letter.read_at,
-        senderAvatar: isAiSender ? 'rabbit' : AVATAR_MAP[sender?.avatar_type ?? 1] ?? 'cat',
+        senderAvatar: isAiSender ? 'ai' : AVATAR_MAP[sender?.avatar_type ?? 1] ?? 'cat',
         senderName: isAiSender ? (letter.sender_display_name ?? 'AI 마음친구') : sender?.nickname ?? '친구',
-        receiverAvatar: isAiReceiver ? 'rabbit' : AVATAR_MAP[receiver?.avatar_type ?? 1] ?? 'cat',
+        receiverAvatar: isAiReceiver ? 'ai' : AVATAR_MAP[receiver?.avatar_type ?? 1] ?? 'cat',
         receiverName: isIncoming ? '나' : isAiReceiver ? (letter.receiver_display_name ?? 'AI 마음친구') : (receiver?.nickname ?? '친구'),
         isIncoming,
       })

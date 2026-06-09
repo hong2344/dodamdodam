@@ -1,5 +1,5 @@
 export type Village = 'dawn' | 'morning' | 'evening' | 'night'
-export type Avatar = 'cat' | 'rabbit' | 'bear' | 'frog' | 'hedgehog' | 'dog'
+export type Avatar = 'cat' | 'rabbit' | 'bear' | 'frog' | 'hedgehog' | 'dog' | 'ai'
 export type Category = 'career' | 'grade' | 'love' | 'appearance' | 'relationship' | 'melancholy'
 export type HomeState = 1 | 2 | 3 | 4 | 5 | 6
 

@@ -7,6 +7,7 @@ const palette: Record<AvatarType, { fur: string; ear: string; accent: string }> 
   frog:     { fur: '#9BB87A', ear: '#7EA058', accent: '#C8E0A0' },
   hedgehog: { fur: '#A88F70', ear: '#8A7355', accent: '#E0C8A0' },
   dog:      { fur: '#E8D5B0', ear: '#C9B088', accent: '#F8E0B8' },
+  ai:       { fur: '#CDE8DD', ear: '#00643E', accent: '#00643E' },
 }
 
 interface Props {
@@ -31,6 +32,7 @@ export default function Avatar({ kind, size = 80, label }: Props) {
           return <line key={i} x1={round(50 + Math.cos(a) * 30)} y1={round(56 + Math.sin(a) * 30)} x2={round(50 + Math.cos(a) * 44)} y2={round(56 + Math.sin(a) * 44)} stroke="#5C4530" strokeWidth="2.2" strokeLinecap="round" />
         })}
         {kind === 'dog' && (<><ellipse cx="24" cy="44" rx="10" ry="16" fill={p.ear} /><ellipse cx="76" cy="44" rx="10" ry="16" fill={p.ear} /></>)}
+        {kind === 'ai' && (<><line x1="50" y1="23" x2="50" y2="11" stroke={p.ear} strokeWidth="2.6" strokeLinecap="round" /><circle cx="50" cy="8" r="4" fill={p.ear} /></>)}
         {kind === 'frog'
           ? (<><circle cx="30" cy="30" r="4" fill="#1A1816" /><circle cx="70" cy="30" r="4" fill="#1A1816" /></>)
           : (<><circle cx="40" cy="54" r="2.6" fill="#1A1816" /><circle cx="60" cy="54" r="2.6" fill="#1A1816" /></>)}
@@ -40,6 +42,7 @@ export default function Avatar({ kind, size = 80, label }: Props) {
         {kind === 'frog' && <path d="M40 68 Q50 76 60 68" stroke="#1A1816" strokeWidth="1.6" fill="none" strokeLinecap="round" />}
         {kind === 'hedgehog' && (<><circle cx="50" cy="64" r="2.2" fill="#1A1816" /><path d="M50 66 Q47 70 44 69 M50 66 Q53 70 56 69" stroke="#1A1816" strokeWidth="1.4" fill="none" strokeLinecap="round" /></>)}
         {kind === 'dog' && (<><ellipse cx="50" cy="65" rx="7" ry="5" fill={p.accent} /><ellipse cx="50" cy="62" rx="2.4" ry="2" fill="#1A1816" /></>)}
+        {kind === 'ai' && <path d="M42 64 Q50 71 58 64" stroke="#1A1816" strokeWidth="1.6" fill="none" strokeLinecap="round" />}
         <circle cx="32" cy="62" r="3" fill="#F5B0B8" opacity="0.5" />
         <circle cx="68" cy="62" r="3" fill="#F5B0B8" opacity="0.5" />
       </svg>
