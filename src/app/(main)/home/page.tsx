@@ -81,15 +81,23 @@ function Bus({ color = OUT_COLOR }: { color?: string }) {
   )
 }
 
+// 2차선: 양방향이면 out은 위 차선, in은 아래 차선으로 비켜 지나가게 세로 오프셋(px)
+const LANE_SHIFT = 7
+
 function ProgressBar({ label, time, buses, partnerLetterbox }: ProgressBarProps) {
-  // 칸 i를 채우는 색: out 버스는 왼쪽부터(녹색), in 버스는 오른쪽부터(테라코타).
-  const cellColor = (i: number): string | null => {
+  const clampCell = (c: number) => Math.max(0, Math.min(6, c))
+  // 칸 i 배경: out은 왼쪽부터(녹색), in은 오른쪽부터(테라코타). 겹치면 좌녹/우테라 반반.
+  const cellBg = (i: number): string => {
     const out = buses.find((b) => b.dir === 'out')
     const inc = buses.find((b) => b.dir === 'in')
-    if (out && i < Math.max(0, Math.min(6, out.cell))) return OUT_COLOR
-    if (inc && i >= 6 - Math.max(0, Math.min(6, inc.cell))) return IN_COLOR
-    return null
+    const outClaim = !!out && i < clampCell(out.cell)
+    const inClaim = !!inc && i >= 6 - clampCell(inc.cell)
+    if (outClaim && inClaim) return `linear-gradient(90deg, ${OUT_COLOR} 50%, ${IN_COLOR} 50%)`
+    if (outClaim) return OUT_COLOR
+    if (inClaim) return IN_COLOR
+    return 'rgba(20,15,8,0.12)'
   }
+  const twoLane = buses.length === 2
   return (
     <div className="px-[18px] pb-[6px]">
       <div className="p-[10px_12px] bg-white/85 border border-[#E0D9C7] rounded-[14px] font-mono text-[10px] tracking-[0.06em]" style={{ color: '#1A1816' }}>
@@ -97,21 +105,23 @@ function ProgressBar({ label, time, buses, partnerLetterbox }: ProgressBarProps)
           <span className="opacity-60">{label}</span>
           <span className="opacity-60">{time}</span>
         </div>
-        <div className="flex items-center gap-1 relative">
+        <div className="flex items-center gap-1 relative min-h-[26px]">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex-1 h-1 rounded-sm" style={{ background: cellColor(i) ?? 'rgba(20,15,8,0.12)' }} />
+            <div key={i} className="flex-1 h-1 rounded-sm" style={{ background: cellBg(i) }} />
           ))}
           {buses.map((b, idx) => {
-            const safeCell = Math.max(0, Math.min(6, b.cell))
+            const safeCell = clampCell(b.cell)
             // 진행률 p(0=왼쪽 끝, 1=오른쪽 끝). 버스 폭을 고려해 [BUS_W/2, 100%-BUS_W/2]에 균일 매핑 → 양 끝에서도 박스 안.
             const p = b.dir === 'out' ? safeCell / 6 : 1 - safeCell / 6
+            // 양방향이면 out은 위 차선, in은 아래 차선으로 비켜 지나감
+            const laneShift = twoLane ? (b.dir === 'out' ? -LANE_SHIFT : LANE_SHIFT) : 0
             return (
               <div
                 key={idx}
                 className="absolute top-1/2"
                 style={{
                   left: `calc(${p} * (100% - ${BUS_W}px) + ${BUS_W / 2}px)`,
-                  transform: `translate(-50%, -50%)${b.dir === 'in' ? ' scaleX(-1)' : ''}`,
+                  transform: `translate(-50%, calc(-50% + ${laneShift}px))${b.dir === 'in' ? ' scaleX(-1)' : ''}`,
                   transition: 'left 0.5s ease-out',
                 }}
               >
