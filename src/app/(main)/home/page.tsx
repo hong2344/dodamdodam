@@ -150,11 +150,6 @@ function ProgressBar({ label, time, top, bottom, partnerLetterbox, legendMine, l
   )
 }
 
-function getDeliveryStatus(progress: ProgressBarProps | null) {
-  if (!progress) return null
-  return { label: '전달 중', message: `${progress.label} · ${progress.time}` }
-}
-
 // 운행 중인 사람 편지 1통. dir/색을 분리: fromMe=현재 발신자(방향), startedByMe=스레드 시작자(색).
 interface TransitLetter {
   arrivalAt: number // sent_at(도착 시각) ms
@@ -470,7 +465,6 @@ export default function HomePage() {
 
   const showBanner = state >= 2
   const showProgress = progress !== null
-  const deliveryStatus = getDeliveryStatus(progress)
   const dim = state === 1
   const isDark = data.villageTheme === 'night' || data.villageTheme === 'evening'
   const textColor = isDark ? '#FFFFFF' : '#1A1816'
@@ -587,28 +581,6 @@ export default function HomePage() {
               <div className="text-[10.5px] text-[#5C544A]">매칭 전에도 편지를 쓰면 답장이 도착해요</div>
             </div>
             <span className="font-mono text-[16px] text-[#00643E]">→</span>
-          </div>
-        )}
-
-        {deliveryStatus && progress && (
-          <div
-            className="mx-[18px] bg-white/90 border border-[#E0D9C7] rounded-[14px]"
-            style={{ color: '#1A1816', marginTop: 12, padding: '13px 12px' }}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="font-mono text-[10px] tracking-[0.14em] uppercase opacity-55">LETTER DELIVERY</p>
-                <strong className="block mt-1 text-[13px] text-[#00643E]">편지 전달 현황</strong>
-              </div>
-              <span className="font-mono text-[11px] text-[#00643E] font-semibold">{deliveryStatus.label}</span>
-            </div>
-            <div className="mt-3 flex items-center gap-1">
-              <div className="flex-1 flex flex-col gap-[5px]">
-                <Rail color={OUT_COLOR} dir={progress.top?.dir ?? 'out'} cell={progress.top ? progress.top.cell : null} />
-                <Rail color={IN_COLOR} dir={progress.bottom?.dir ?? 'in'} cell={progress.bottom ? progress.bottom.cell : null} />
-              </div>
-            </div>
-            <p className="mt-2 text-[10.5px] text-[#5C544A]">{deliveryStatus.message}</p>
           </div>
         )}
 
