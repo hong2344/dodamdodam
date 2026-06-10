@@ -11,6 +11,9 @@ type SendPushRequest = {
   type?: PushEventType;
   url?: string;
   data?: Record<string, unknown>;
+  // 기본 메시지(PUSH_MESSAGES) 대신 보낼 커스텀 제목/본문 (선택)
+  title?: string;
+  body?: string;
 };
 
 type PushSubscriptionRow = {
@@ -97,8 +100,8 @@ export async function POST(request: NextRequest) {
     const rows = (subscriptions || []) as PushSubscriptionRow[];
     const message = PUSH_MESSAGES[body.type];
     const payload = JSON.stringify({
-      title: message.title,
-      body: message.body || '',
+      title: body.title || message.title,
+      body: body.body ?? message.body ?? '',
       url: body.url || '/',
       data: {
         type: body.type,

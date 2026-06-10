@@ -515,13 +515,15 @@ export default function HomePage() {
                 </>
               ) : data.isAiPartner ? (
                 <>
-                  <strong className="text-[#00643E]">AI 마음친구</strong>
-                  <div className="text-[10.5px] text-[#5C544A]">매칭 전, 편지를 쓰면 답장이 도착해요</div>
+                  <strong className="text-[#00643E]">매칭 진행 중</strong>
+                  <div className="text-[10.5px] text-[#5C544A]">매칭 전에는 AI 마음친구와 편지를 주고받을 수 있어요</div>
+                  <div className="text-[10px] text-[#8A8276] mt-[2px]">AI 마음친구 답장은 약 1시간 뒤에 편지집에 도착해요</div>
                 </>
               ) : (
                 <>
                   <strong className="text-[#00643E]">매칭 완료</strong>
                   <div className="text-[10.5px] text-[#5C544A]">편지를 작성하려면 여기를 클릭하세요</div>
+                  <div className="text-[10px] text-[#8A8276] mt-[2px]">상대의 편지는 약 3시간 뒤 도착해요</div>
                 </>
               )}
             </div>
