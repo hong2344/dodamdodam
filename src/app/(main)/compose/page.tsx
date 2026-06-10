@@ -49,14 +49,10 @@ function ComposeForm() {
     return () => window.clearInterval(t)
   }, [])
 
+  // 입력은 막지 않고(글자 사라짐·조합 깜빡임 방지) 자유롭게 받는다.
+  // 금지어 검사는 아래 policyViolation으로 실시간 안내 + 전송 차단으로 처리한다.
   const handleTextChange = (nextText: string) => {
-    const nextValue = nextText.slice(0, 1000)
-    const violation = getLetterPolicyViolation(nextValue)
-    if (violation) {
-      window.alert(getLetterPolicyMessage(violation))
-      return
-    }
-    setText(nextValue)
+    setText(nextText.slice(0, 1000))
   }
 
   useEffect(() => {
@@ -186,6 +182,8 @@ function ComposeForm() {
     )
   }
 
+  // 현재 입력값의 금지어 위반(없으면 null). 실시간 안내 + 전송 버튼 차단에 사용.
+  const policyViolation = text.trim().length > 0 ? getLetterPolicyViolation(text) : null
   const isBlocked = blockedArrivalAt !== null && now < blockedArrivalAt
   const remainText = (() => {
     if (!blockedArrivalAt) return ''
@@ -261,10 +259,13 @@ function ComposeForm() {
           <span className="absolute bottom-[10px] right-[14px] font-mono text-[10px] opacity-50">{text.length} / 1000</span>
         </div>
 
+        {policyViolation && !error && (
+          <p className="mt-2 text-[12px] text-[#C2410C]">{getLetterPolicyMessage(policyViolation)}</p>
+        )}
         {error && <p className="mt-2 text-[12px] text-red-600">{error}</p>}
 
         <div className="mt-4">
-          <Btn disabled={isBlocked || text.trim().length < 10 || sending} onClick={handleSend}>
+          <Btn disabled={isBlocked || text.trim().length < 10 || sending || policyViolation !== null} onClick={handleSend}>
             {sending ? '보내는 중…' : isBlocked ? '편지가 가는 중…' : '보내기 →'}
           </Btn>
         </div>

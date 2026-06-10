@@ -1,5 +1,7 @@
 export type LetterPolicyViolation = 'profanity' | 'phone' | 'openKakao'
 
+// 욕설만 차단한다. '죽어'·'꺼져'는 고민/감정 편지에서 흔한 표현이라 제외하고,
+// '개새'는 '새벽' 같은 단어를 오탐하므로 제외('개새끼'는 아래 '새끼' 패턴이 그대로 잡는다).
 const PROFANITY_PATTERNS = [
   /시\s*발/i,
   /씨\s*발/i,
@@ -7,10 +9,7 @@ const PROFANITY_PATTERNS = [
   /병\s*신/i,
   /ㅂ\s*ㅅ/i,
   /지\s*랄/i,
-  /개\s*새/i,
   /새\s*끼/i,
-  /꺼\s*져/i,
-  /죽\s*어/i,
   /fuck/i,
   /shit/i,
   /bitch/i,
