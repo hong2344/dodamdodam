@@ -173,6 +173,9 @@ interface HomeData {
   isAiPartner: boolean
   // 읽지 않은 받은 편지 수 (편지집 배지)
   unreadCount: number
+  // 현재 선택한 고민(관심사) 카테고리 표시용
+  categoryName: string | null
+  categoryEmoji: string | null
 }
 
 export default function HomePage() {
@@ -219,9 +222,24 @@ export default function HomePage() {
       // 2) 내 프로필
       const { data: profile } = await supabase
         .from('profiles')
-        .select('avatar_type, nickname, village_id')
+        .select('avatar_type, nickname, village_id, match_category')
         .eq('id', user.id)
         .maybeSingle()
+
+      // 현재 선택한 고민(관심사) 카테고리: 이모지 + 이름
+      let categoryName: string | null = null
+      let categoryEmoji: string | null = null
+      if (profile?.match_category) {
+        const { data: cat } = await supabase
+          .from('interest_categories')
+          .select('name, emoji')
+          .eq('id', profile.match_category)
+          .maybeSingle()
+        if (cat) {
+          categoryName = cat.name ?? null
+          categoryEmoji = cat.emoji ?? null
+        }
+      }
 
       // 3) 내 마을 정보
       let villageTheme = 'morning'
@@ -355,6 +373,8 @@ export default function HomePage() {
         incomingArrivalAt,
         isAiPartner,
         unreadCount: unreadCount ?? 0,
+        categoryName,
+        categoryEmoji,
       })
       setLoading(false)
     })()
@@ -498,6 +518,26 @@ export default function HomePage() {
         <div className="px-6 text-center" style={{ marginTop: 18 }}>
           <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-70" style={{ textShadow }}>WELCOME TO</p>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, margin: '4px 0 0', fontWeight: 400, color: textColor, textShadow }}>{v.name} 마을</h2>
+          {data.categoryName && (
+            <div className="mt-[10px] flex justify-center">
+              <span
+                className="inline-flex items-center gap-[5px] pl-[8px] pr-[11px] py-[4px] rounded-full text-[11px] font-medium"
+                style={{
+                  background: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.78)',
+                  color: isDark ? '#FFFFFF' : '#00643E',
+                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,100,62,0.25)'}`,
+                  backdropFilter: 'blur(2px)',
+                }}
+              >
+                <span
+                  className="font-mono text-[9px] tracking-[0.06em] px-[6px] py-[2px] rounded-full"
+                  style={{ background: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,100,62,0.1)' }}
+                >고민</span>
+                {data.categoryEmoji && <span className="leading-none">{data.categoryEmoji}</span>}
+                {data.categoryName}
+              </span>
+            </div>
+          )}
         </div>
 
         {showBanner && data.partnerAvatar ? (
