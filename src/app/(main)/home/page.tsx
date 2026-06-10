@@ -222,9 +222,24 @@ export default function HomePage() {
       // 2) 내 프로필
       const { data: profile } = await supabase
         .from('profiles')
-        .select('avatar_type, nickname, village_id, match_category')
+        .select('avatar_type, nickname, village_id, match_category, nickname_set')
         .eq('id', user.id)
         .maybeSingle()
+
+      // 온보딩(마을 → 아바타 → 카테고리 → 닉네임)을 끝내지 못한 사용자는
+      // 홈을 사용할 수 없게 막고, 흐름 순서대로 '아직 못 끝낸 첫 단계'로 돌려보낸다.
+      // 마을 미설정 → /village, 아바타 미설정 → /avatar, 카테고리 미설정 → /category,
+      // 닉네임 미확정 → /nickname.
+      const onboardingStep =
+        !profile?.village_id ? '/village'
+        : !profile?.avatar_type ? '/avatar'
+        : !profile?.match_category ? '/category'
+        : !profile?.nickname || !profile?.nickname_set ? '/nickname'
+        : null
+      if (onboardingStep) {
+        router.replace(onboardingStep)
+        return
+      }
 
       // 현재 선택한 고민(관심사) 카테고리: 이모지 + 이름
       let categoryName: string | null = null

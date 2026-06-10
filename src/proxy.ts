@@ -52,15 +52,22 @@ export async function proxy(req: NextRequest) {
   if (user && !pathname.startsWith('/api')) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('nickname, nickname_set')
+      .select('village_id, avatar_type, match_category, nickname, nickname_set')
       .eq('id', user.id)
       .maybeSingle()
 
     const isOnboardingPath = ONBOARDING_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
 
+    // 온보딩(마을 → 아바타 → 카테고리 → 닉네임)을 끝내지 못한 사용자는
+    // '아직 못 끝낸 첫 단계'로 보낸다. 마을부터 안 한 신규 사용자는 인트로(/onboarding)부터.
     if ((!profile?.nickname || !profile.nickname_set) && !isOnboardingPath) {
+      const dest =
+        !profile?.village_id ? '/onboarding'
+        : !profile?.avatar_type ? '/avatar'
+        : !profile?.match_category ? '/category'
+        : '/nickname'
       const url = req.nextUrl.clone()
-      url.pathname = '/onboarding'
+      url.pathname = dest
       return NextResponse.redirect(url)
     }
   }
