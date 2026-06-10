@@ -6,7 +6,11 @@ import Avatar from '@/components/Avatar'
 import HouseIcon from '@/components/HouseIcon'
 import { createClient } from '@/lib/supabase/client'
 import { usePushNotification } from '@/hooks/usePushNotification'
+import { starsDataUri } from '@/lib/stars'
 import { HomeState, Avatar as AvatarType } from '@/types'
+
+// 밤 마을 배경 별밭 (gradient 위에 얹는 레이어). 시드 고정으로 매 렌더 동일.
+const NIGHT_STARS = starsDataUri({ w: 375, h: 680, count: 360, seed: 7, brightProb: 0.05, removeLargest: 2 })
 
 // avatar_type 숫자 → 동물 매핑
 const AVATAR_MAP: Record<number, AvatarType> = {
@@ -533,7 +537,14 @@ export default function HomePage() {
     <div className="min-h-screen flex items-center justify-center" style={{ background: '#F5F0E6' }}>
       <div
         className="w-full max-w-[375px] flex flex-col relative"
-        style={{ minHeight: 680, background: v.bg, borderRadius: 20, color: textColor, overflow: 'hidden' }}
+        style={{
+          minHeight: 680,
+          background: data.villageTheme === 'night' ? `${NIGHT_STARS}, ${v.bg}` : v.bg,
+          backgroundSize: data.villageTheme === 'night' ? '100% 100%, 100% 100%' : undefined,
+          borderRadius: 20,
+          color: textColor,
+          overflow: 'hidden',
+        }}
       >
         {/* 하단 노란 띠 (5px) */}
         <div className="absolute left-0 right-0 bottom-0 z-10" style={{ height: 20, background: '#F5EBC8' }} />

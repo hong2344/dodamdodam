@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Btn from '@/components/Btn'
 import Chip from '@/components/Chip'
+import Avatar from '@/components/Avatar'
 import { createClient } from '@/lib/supabase/client'
+import { starsDataUri } from '@/lib/stars'
 
 interface VillageRow {
   id: string
@@ -14,12 +16,113 @@ interface VillageRow {
   color_hex: string
 }
 
-// theme 별 카드 스타일 (배경 그라데이션 + 어두운 톤 여부)
-const THEME_STYLES: Record<string, { bg: string; dark?: boolean }> = {
-  dawn:    { bg: 'linear-gradient(135deg,#2D1B4E,#7B5EA7)', dark: true },
-  morning: { bg: 'linear-gradient(135deg,#C8E6FA,#A8D8A8)' },
-  evening: { bg: 'linear-gradient(135deg,#F5A878,#E07050)' },
-  night:   { bg: 'linear-gradient(135deg,#0D1B2A,#1B3A5C)', dark: true },
+// 미리보기 카드용 밤 별밭 (gradient 위 레이어). 시드 고정.
+const MINI_STARS = starsDataUri({ w: 160, h: 120, count: 80, seed: 13, brightProb: 0, removeLargest: 0 })
+
+// theme 별 메타: 홈 화면과 동일한 그라데이션 + 시간대/상징/언덕색
+interface ThemeMeta {
+  grad: string
+  time: string
+  sym: string
+  dark: boolean // 글자(흰색) 여부
+  hills: [string, string]
+  stars?: boolean
+}
+const THEME_META: Record<string, ThemeMeta> = {
+  dawn: {
+    grad: 'linear-gradient(170deg,#C8AED8 0%,#E8B8B0 82%,#F0CDB0 100%)',
+    time: '5–8시',
+    sym: '고요한 시작과 옅은 설렘',
+    dark: true,
+    hills: ['rgba(0,100,62,0.18)', 'rgba(0,100,62,0.24)'],
+  },
+  morning: {
+    grad: 'linear-gradient(170deg,#B8D5E8 0%,#E0E8E0 100%)',
+    time: '8–16시',
+    sym: '맑은 활기와 따뜻한 기운',
+    dark: false,
+    hills: ['rgba(0,100,62,0.18)', 'rgba(0,100,62,0.24)'],
+  },
+  evening: {
+    grad: 'linear-gradient(170deg,#E8A878 0%,#D87858 80%,#8C4838 100%)',
+    time: '16–20시',
+    sym: '차분함과 그리움',
+    dark: false,
+    hills: ['rgba(0,0,0,0.16)', 'rgba(0,0,0,0.22)'],
+  },
+  night: {
+    grad: 'linear-gradient(170deg,#2A3858 0%,#1A2240 80%,#0A0E1F 100%)',
+    time: '20–5시',
+    sym: '깊은 고요와 사색',
+    dark: true,
+    hills: ['rgba(0,0,0,0.28)', 'rgba(0,0,0,0.38)'],
+    stars: true,
+  },
+}
+
+// 각 마을이 보여줄 홈 화면 미니 미리보기
+function HomePreview({ name, meta }: { name: string; meta: ThemeMeta }) {
+  const textColor = meta.dark ? '#FFFFFF' : '#1A1816'
+  const textShadow = meta.dark ? '0 1px 3px rgba(0,0,0,0.45)' : undefined
+  const bg = meta.stars ? `${MINI_STARS}, ${meta.grad}` : meta.grad
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: 120,
+        borderRadius: 10,
+        overflow: 'hidden',
+        background: bg,
+        backgroundSize: meta.stars ? '100% 100%, 100% 100%' : undefined,
+      }}
+    >
+      <p
+        className="font-mono"
+        style={{
+          fontSize: 5.5,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          textAlign: 'center',
+          paddingTop: 15,
+          opacity: 0.85,
+          color: textColor,
+          textShadow,
+          position: 'relative',
+          zIndex: 2,
+        }}
+      >
+        Welcome to
+      </p>
+      <p
+        style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: 15,
+          textAlign: 'center',
+          lineHeight: 1,
+          marginTop: 3,
+          color: textColor,
+          textShadow,
+          position: 'relative',
+          zIndex: 2,
+        }}
+      >
+        {name} 마을
+      </p>
+      <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-44%)', zIndex: 2 }}>
+        <Avatar kind="dog" size={30} />
+      </div>
+      <svg
+        viewBox="0 0 300 90"
+        preserveAspectRatio="none"
+        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, width: '100%', height: 44, zIndex: 1 }}
+      >
+        <ellipse cx="60" cy="95" rx="130" ry="42" fill={meta.hills[0]} />
+        <ellipse cx="250" cy="100" rx="160" ry="55" fill={meta.hills[1]} />
+      </svg>
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 6, background: '#F5EBC8', zIndex: 1 }} />
+    </div>
+  )
 }
 
 export default function VillagePage() {
@@ -85,11 +188,13 @@ export default function VillagePage() {
         </div>
 
         <div className="mt-6">
-          <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-55">마을을 선택해요</p>
+          <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-55">어떤 마을에서 시작할까요</p>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 30, lineHeight: 1.15, marginTop: 10, fontWeight: 400 }}>
-            마음의 <em style={{ color: '#00643E', fontStyle: 'italic' }}>시간대를</em><br />선택해주세요.
+            당신의 <em style={{ color: '#00643E', fontStyle: 'italic' }}>마을을</em><br />선택하세요.
           </h2>
-          <p className="mt-3 text-[13px] text-[#5C544A]">지금 당신의 마음은 어떤 하늘인가요?</p>
+          <p className="mt-3 text-[13px] text-[#5C544A] leading-[1.55]">
+            각 마을은 저마다 다른 마음의 시간을 담고 있어요.<br />지금 마음과 가장 닮은 곳을 골라보세요.
+          </p>
         </div>
 
         {loading && (
@@ -103,23 +208,33 @@ export default function VillagePage() {
         )}
 
         {!loading && !error && (
-          <div className="mt-6 grid grid-cols-2 gap-[10px]">
+          <div className="mt-5 grid grid-cols-2 gap-[14px]">
             {villages.map(v => {
-              const style = THEME_STYLES[v.theme] || { bg: '#ccc' }
+              const meta = THEME_META[v.theme] || THEME_META.morning
               const isActive = selected === v.id
               return (
                 <div
                   key={v.id}
                   onClick={() => setSelected(v.id)}
-                  className="cursor-pointer rounded-[18px] p-[14px] flex flex-col justify-end overflow-hidden relative"
+                  className="cursor-pointer overflow-hidden"
                   style={{
-                    aspectRatio: '1',
-                    background: style.bg,
-                    border: isActive ? '2px solid #00643E' : '1px solid rgba(20,15,8,0.06)',
-                    boxShadow: isActive ? '0 6px 18px -8px rgba(0,100,62,0.5)' : 'none',
+                    borderRadius: 16,
+                    background: '#fff',
+                    padding: '8px 8px 12px',
+                    border: isActive ? '2px solid #00643E' : '1px solid #E0D9C7',
                   }}
                 >
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 28, margin: 0, fontWeight: 500, color: style.dark ? '#FFFFFF' : '#1A1816', textShadow: style.dark ? '0 1px 4px rgba(0,0,0,0.6)' : '0 1px 3px rgba(255,255,255,0.65)', zIndex: 1, letterSpacing: '-0.01em' }}>{v.name}</h3>
+                  <HomePreview name={v.name} meta={meta} />
+                  <div style={{ padding: '9px 4px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6 }}>
+                      <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#1A1816' }}>{v.name}</span>
+                      <span
+                        className="font-mono"
+                        style={{ fontSize: 9, color: '#00643E', background: 'rgba(0,100,62,0.08)', borderRadius: 999, padding: '2px 7px', whiteSpace: 'nowrap' }}
+                      >{meta.time}</span>
+                    </div>
+                    <p style={{ fontSize: 10.5, color: '#5C544A', marginTop: 6, lineHeight: 1.45 }}>{meta.sym}</p>
+                  </div>
                 </div>
               )
             })}
