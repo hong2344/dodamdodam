@@ -157,7 +157,8 @@ export default function ReadLetterPage() {
 
         {data.isIncoming && (
           <div className="mt-4">
-            <Btn onClick={() => router.push('/compose')}>답장쓰기 →</Btn>
+            {/* 사람 편지엔 답장 연결(스레드 색 유지). AI 편지엔 일반 작성. */}
+            <Btn onClick={() => router.push(data.senderAvatar === 'ai' ? '/compose' : `/compose?reply=${letterId}`)}>답장쓰기 →</Btn>
           </div>
         )}
 

@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Avatar from '@/components/Avatar'
 import Btn from '@/components/Btn'
@@ -18,7 +18,17 @@ const AVATAR_MAP: Record<number, AvatarType> = {
 }
 
 export default function ComposePage() {
+  return (
+    <Suspense fallback={null}>
+      <ComposeForm />
+    </Suspense>
+  )
+}
+
+function ComposeForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const replyTo = searchParams?.get('reply') || null
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
@@ -131,7 +141,7 @@ export default function ComposePage() {
     const response = await fetch('/api/letters', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: text.trim() }),
+      body: JSON.stringify({ content: text.trim(), replyTo }),
     })
     setSending(false)
 

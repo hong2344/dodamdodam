@@ -18,7 +18,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
-  const { content } = (await request.json().catch(() => ({}))) as { content?: string }
+  const { content, replyTo } = (await request.json().catch(() => ({}))) as {
+    content?: string
+    replyTo?: string
+  }
   const letterContent = content?.trim()
 
   if (!letterContent || letterContent.length < 10) {
@@ -69,6 +72,21 @@ export async function POST(request: Request) {
     }
   }
 
+  // 답장 연결: replyTo가 '내가 받은 사람 편지'면 그 편지의 답장으로 기록(original_letter_id).
+  // 이걸로 홈에서 왕복(스레드) 색을 시작자 기준으로 칠한다. AI 편지/무효값은 무시(새 스레드).
+  let originalLetterId: string | null = null
+  if (replyTo && partnerId) {
+    const { data: replied } = await admin
+      .from('letters')
+      .select('id')
+      .eq('id', replyTo)
+      .eq('match_id', match!.id)
+      .eq('receiver_id', user.id)
+      .eq('sender_type', 'user')
+      .maybeSingle()
+    if (replied) originalLetterId = replied.id
+  }
+
   // sent_at = 도착(arrival) 시각. 매칭 상대에게 가는 편지는 3시간, AI 관련 편지는 1시간 뒤 도착.
   const HUMAN_DELIVERY_MS = 3 * 60 * 60 * 1000
   const AI_DELIVERY_MS = 60 * 60 * 1000
@@ -85,6 +103,7 @@ export async function POST(request: Request) {
       sender_type: 'user',
       receiver_type: partnerId ? 'user' : 'ai',
       receiver_display_name: partnerId ? null : 'AI 마음친구',
+      original_letter_id: originalLetterId,
       content: letterContent,
       sent_at: userArrivalAt,
     })
