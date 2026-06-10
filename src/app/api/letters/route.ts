@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { generateAiLetterReply } from '@/lib/ai/reply'
+import { getLetterPolicyMessage, getLetterPolicyViolation } from '@/lib/letterPolicy'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
@@ -26,6 +27,11 @@ export async function POST(request: Request) {
 
   if (!letterContent || letterContent.length < 10) {
     return NextResponse.json({ error: '편지는 10자 이상 작성해주세요.' }, { status: 400 })
+  }
+
+  const violation = getLetterPolicyViolation(letterContent)
+  if (violation) {
+    return NextResponse.json({ error: getLetterPolicyMessage(violation) }, { status: 400 })
   }
 
   const admin = createAdminClient()

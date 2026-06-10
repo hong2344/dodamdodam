@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Avatar from '@/components/Avatar'
 import Btn from '@/components/Btn'
+import { getLetterPolicyMessage, getLetterPolicyViolation } from '@/lib/letterPolicy'
 import { createClient } from '@/lib/supabase/client'
 import { Avatar as AvatarType } from '@/types'
 
@@ -47,6 +48,16 @@ function ComposeForm() {
     const t = window.setInterval(() => setNow(Date.now()), 1_000)
     return () => window.clearInterval(t)
   }, [])
+
+  const handleTextChange = (nextText: string) => {
+    const nextValue = nextText.slice(0, 1000)
+    const violation = getLetterPolicyViolation(nextValue)
+    if (violation) {
+      window.alert(getLetterPolicyMessage(violation))
+      return
+    }
+    setText(nextValue)
+  }
 
   useEffect(() => {
     (async () => {
@@ -128,6 +139,13 @@ function ComposeForm() {
       setError('편지가 아직 가는 중이에요. 도착한 뒤에 보낼 수 있어요.')
       return
     }
+
+    const violation = getLetterPolicyViolation(text)
+    if (violation) {
+      setError(getLetterPolicyMessage(violation))
+      return
+    }
+
     if (text.trim().length < 10) {
       setError('편지는 10자 이상 작성해주세요.')
       return
@@ -234,7 +252,7 @@ function ComposeForm() {
           )}
           <textarea
             value={text}
-            onChange={e => setText(e.target.value.slice(0, 1000))}
+            onChange={e => handleTextChange(e.target.value)}
             maxLength={1000}
             disabled={isBlocked}
             className="absolute inset-0 w-full h-full bg-transparent border-none outline-none resize-none text-[#1A1816] p-[20px_18px] disabled:opacity-50"
