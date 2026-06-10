@@ -101,24 +101,36 @@ export default function CategoryPage() {
                 <div
                   key={c.id}
                   onClick={() => setSelected(c.id)}
-                  className="cursor-pointer p-[14px] rounded-[14px] flex flex-col justify-between"
+                  className="cursor-pointer flex flex-col items-center gap-[10px] px-[14px] py-[18px] rounded-[16px]"
                   style={{
-                    aspectRatio: '1.4',
                     border: active ? '2px solid #00643E' : '1px solid #E0D9C7',
                     background: active ? 'rgba(0,100,62,0.05)' : 'rgba(255,255,255,0.55)',
                   }}
                 >
-                  <span className="text-[20px] leading-none">{c.emoji}</span>
-                  <div>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, margin: 0, fontWeight: 400, color: active ? '#00643E' : '#1A1816' }}>{c.name}</h3>
-                  </div>
+                  <span
+                    className="flex items-center justify-center rounded-full text-[22px]"
+                    style={{ width: 52, height: 52, background: active ? 'rgba(0,100,62,0.12)' : '#EFE9DA' }}
+                  >{c.emoji}</span>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, margin: 0, fontWeight: 400, color: active ? '#00643E' : '#1A1816' }}>{c.name}</h3>
                 </div>
               )
             })}
           </div>
         )}
 
-        <p className="mt-4 font-mono text-[10px] opacity-55 tracking-[0.08em] text-center">같은 결의 친구와 만나요</p>
+        {!loading && !error && (
+          <div
+            className="mt-4 flex items-start gap-[7px] px-[12px] py-[10px] rounded-[10px]"
+            style={{ background: 'rgba(0,100,62,0.05)', border: '1px solid #E0D9C7' }}
+          >
+            <span className="text-[13px] leading-none mt-[1px]">🌙</span>
+            <p className="text-[11px] leading-[1.45] text-[#5C544A]">
+              <b style={{ color: '#00643E' }}>멜랑콜리</b>는 우울·불안·정체성 등 한마디로 묶기 어려운 마음의 그늘을 포함해요.
+            </p>
+          </div>
+        )}
+
+        <p className="mt-3 font-mono text-[10px] opacity-55 tracking-[0.08em] text-center">같은 결의 친구와 만나요</p>
 
         {error && !loading && <p className="mt-2 text-[12px] text-red-600">{error}</p>}
 

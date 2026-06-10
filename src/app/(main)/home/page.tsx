@@ -35,9 +35,10 @@ const VILLAGE_PALETTES: Record<string, { name: string; bg: string }> = {
   night:   { name: '밤',   bg: 'linear-gradient(170deg,#2A3858 0%,#1A2240 80%,#0A0E1F 100%)' },
 }
 
-// 운행 시간: 매칭 후 사람 편지 3시간 / 매칭 전 AI 편지 1시간. 둘 다 6칸으로 표시.
+// 운행 시간: 매칭 후 사람 편지 3시간(트랙 2개). 매칭 전 AI 편지는 버스 1대·선 1개로
+// 보낼 때 30분 + 답장 올 때 30분을 각각 따로 측정해 순차로 표시한다(구간당 30분).
 const HUMAN_TOTAL_MS = 3 * 60 * 60 * 1000
-const AI_TOTAL_MS = 60 * 60 * 1000
+const AI_LEG_MS = 30 * 60 * 1000
 
 // 버스(편지) 방향별 색: out = 내가 보냄(녹색), in = 상대/AI가 보냄(테라코타)
 const OUT_COLOR = '#00643E'
@@ -61,14 +62,19 @@ interface RailSpec {
   cell: number
 }
 
+interface RailRender {
+  color: string
+  dir: 'out' | 'in'
+  cell: number | null
+}
+
 interface ProgressBarProps {
   label: string
   time: string
-  top: RailSpec | null // 위 트랙 = 내가 시작한 왕복(초록)
-  bottom: RailSpec | null // 아래 트랙 = 상대/AI가 시작한 왕복(주황)
+  rails: RailRender[] // 1개(매칭 전 AI: 버스 1대) 또는 2개(매칭 후 사람)
   partnerLetterbox?: ReactNode // 오른쪽 편지집 표시 (기본: 사람 상대 편지집)
-  legendMine: string // 범례: 초록 색이 뜻하는 것
-  legendTheirs: string // 범례: 주황 색이 뜻하는 것
+  legendMine?: string // 범례: 초록 색이 뜻하는 것 (둘 다 있을 때만 표시)
+  legendTheirs?: string // 범례: 주황 색이 뜻하는 것
 }
 
 const BUS_W = 22 // 버스 아이콘 폭(px)
@@ -116,8 +122,8 @@ function Rail({ color, dir, cell }: { color: string; dir: 'out' | 'in'; cell: nu
   )
 }
 
-function ProgressBar({ label, time, top, bottom, partnerLetterbox, legendMine, legendTheirs }: ProgressBarProps) {
-  // 위 트랙=내가 시작한 왕복(초록), 아래 트랙=상대/AI가 시작한 왕복(주황). 항상 둘 다 표시.
+function ProgressBar({ label, time, rails, partnerLetterbox, legendMine, legendTheirs }: ProgressBarProps) {
+  // rails: 매칭 후 사람은 2개(내 왕복=초록 / 상대 왕복=주황), 매칭 전 AI는 1개(버스 1대).
   return (
     <div className="px-[18px] pb-[6px]">
       <div className="p-[10px_12px] bg-white/85 border border-[#E0D9C7] rounded-[14px] font-mono text-[10px] tracking-[0.06em]" style={{ color: '#1A1816' }}>
@@ -126,8 +132,9 @@ function ProgressBar({ label, time, top, bottom, partnerLetterbox, legendMine, l
           <span className="opacity-60">{time}</span>
         </div>
         <div className="flex flex-col gap-[5px]">
-          <Rail color={OUT_COLOR} dir={top?.dir ?? 'out'} cell={top ? top.cell : null} />
-          <Rail color={IN_COLOR} dir={bottom?.dir ?? 'in'} cell={bottom ? bottom.cell : null} />
+          {rails.map((r, i) => (
+            <Rail key={i} color={r.color} dir={r.dir} cell={r.cell} />
+          ))}
         </div>
         {/* 진행선 양 끝 편지집 위치 (왼쪽=내 편지집, 오른쪽=상대 편지집) */}
         <div className="flex items-start justify-between mt-[7px] text-[8.5px] leading-none opacity-70">
@@ -136,15 +143,17 @@ function ProgressBar({ label, time, top, bottom, partnerLetterbox, legendMine, l
             <span className="flex flex-col items-center gap-[3px]"><HouseIcon size={12} />상대 편지집</span>
           )}
         </div>
-        {/* 범례(맨 아래): 초록/주황 색이 뜻하는 것 */}
-        <div className="flex items-center justify-center gap-[12px] mt-[9px] text-[8.5px] leading-none opacity-75">
-          <span className="flex items-center gap-[4px]">
-            <span className="w-[7px] h-[7px] rounded-full inline-block" style={{ background: OUT_COLOR }} />{legendMine}
-          </span>
-          <span className="flex items-center gap-[4px]">
-            <span className="w-[7px] h-[7px] rounded-full inline-block" style={{ background: IN_COLOR }} />{legendTheirs}
-          </span>
-        </div>
+        {/* 범례(맨 아래): 초록/주황 색이 뜻하는 것. 두 색이 다 쓰일 때(사람 매칭)만 표시. */}
+        {legendMine && legendTheirs && (
+          <div className="flex items-center justify-center gap-[12px] mt-[9px] text-[8.5px] leading-none opacity-75">
+            <span className="flex items-center gap-[4px]">
+              <span className="w-[7px] h-[7px] rounded-full inline-block" style={{ background: OUT_COLOR }} />{legendMine}
+            </span>
+            <span className="flex items-center gap-[4px]">
+              <span className="w-[7px] h-[7px] rounded-full inline-block" style={{ background: IN_COLOR }} />{legendTheirs}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -411,38 +420,71 @@ export default function HomePage() {
   // 내가 보낸 편지가 아직 운행 중이면(도착 전) 새 편지 전송을 막는다.
   let outgoingInTransit = false
 
-  // 매칭 후(사람) 또는 매칭 전(AI) — 둘 다 버스로 표시. 운행 시간만 다름(사람 3h / AI 1h).
+  // 매칭 후(사람)와 매칭 전(AI) 모두 버스로 표시하되 표현이 다르다.
+  // - 매칭 전 AI: 버스 1대·선 1개. 내 편지(초록)가 30분간 AI로 → AI 답장(주황)이 30분간 나에게.
+  // - 매칭 후 사람: 트랙 2개(내 왕복 초록 / 상대 왕복 주황), 각 3시간.
   if (data.matchId || data.isAiPartner) {
     state = 2 // 상대 있음, 아직 편지 없음
     const nick = data.partnerNickname ?? '친구'
-    const totalMs = data.isAiPartner ? AI_TOTAL_MS : HUMAN_TOTAL_MS
-    const cellMs = totalMs / 6
-    // 도착 시각으로 진행 칸/경과 계산. 경과 = now - 발송시각 = now - arrival + totalMs.
-    const cellOf = (arrival: number) => {
-      const elapsed = Math.max(0, now - arrival + totalMs)
-      return { cell: Math.min(6, Math.floor(elapsed / cellMs)), elapsed }
-    }
-
-    let top: RailSpec | null = null // 내가 시작한 왕복(초록)
-    let bottom: RailSpec | null = null // 상대/AI가 시작한 왕복(주황)
-    let topArr = 0
-    let bottomArr = 0
-    let timeMs = 0
-    let anyOut = false // 내가 보낸 편지 운행 중(방향)
-    let anyIn = false // 상대/AI가 보낸 편지 운행 중(방향)
 
     if (data.isAiPartner) {
-      // 매칭 전: 방향 기반(내 편지=초록 out / AI 답장=주황 in)
-      const inTransit = (a: number | null) => a != null && now < a
-      if (inTransit(data.outgoingArrivalAt)) {
-        const { cell, elapsed } = cellOf(data.outgoingArrivalAt!)
-        top = { dir: 'out', cell }; anyOut = true; timeMs = Math.max(timeMs, elapsed)
+      // 한 구간(30분) 기준 진행 칸/경과 계산. 경과 = now - 출발시각 = now - arrival + AI_LEG_MS.
+      // 가는 구간/오는 구간 각각 0~30분을 따로 측정한다.
+      const cellMs = AI_LEG_MS / 6
+      const legOf = (arrival: number) => {
+        const elapsed = Math.min(AI_LEG_MS, Math.max(0, now - arrival + AI_LEG_MS))
+        return { cell: Math.min(6, Math.floor(elapsed / cellMs)), elapsed }
       }
-      if (inTransit(data.incomingArrivalAt)) {
-        const { cell, elapsed } = cellOf(data.incomingArrivalAt!)
-        bottom = { dir: 'in', cell }; anyIn = true; timeMs = Math.max(timeMs, elapsed)
+
+      let rail: RailRender | null = null
+      let anyOut = false
+      let label = ''
+      let legElapsed = 0
+      if (data.outgoingArrivalAt != null && now < data.outgoingArrivalAt) {
+        // 구간 1: 내 편지가 AI로 가는 중(초록, 왼→오) — 30분 측정
+        const { cell, elapsed } = legOf(data.outgoingArrivalAt)
+        rail = { color: OUT_COLOR, dir: 'out', cell }
+        anyOut = true; legElapsed = elapsed
+        label = `${nick} 님께 편지가 가는 중`
+      } else if (data.incomingArrivalAt != null && now < data.incomingArrivalAt) {
+        // 구간 2: AI 답장이 나에게 오는 중(오→왼) — 다시 30분 측정. 버스 1대 왕복이라 색은 초록 유지.
+        const { cell, elapsed } = legOf(data.incomingArrivalAt)
+        rail = { color: OUT_COLOR, dir: 'in', cell }
+        legElapsed = elapsed
+        label = `${nick} 님의 답장이 오는 중`
+      }
+      outgoingInTransit = anyOut
+
+      if (rail) {
+        state = anyOut ? 3 : 5
+        // 버스 1대뿐이라 색 범례(내 편지/AI 답장)는 표시하지 않는다.
+        progress = {
+          label,
+          time: formatElapsed(legElapsed, AI_LEG_MS),
+          rails: [rail],
+          partnerLetterbox: (
+            <span className="flex flex-col items-center gap-[3px]">
+              <Avatar kind="ai" size={12} />AI 마음친구
+            </span>
+          ),
+        }
       }
     } else {
+      const cellMs = HUMAN_TOTAL_MS / 6
+      // 도착 시각으로 진행 칸/경과 계산. 경과 = now - 발송시각 = now - arrival + totalMs.
+      const cellOf = (arrival: number) => {
+        const elapsed = Math.max(0, now - arrival + HUMAN_TOTAL_MS)
+        return { cell: Math.min(6, Math.floor(elapsed / cellMs)), elapsed }
+      }
+
+      let top: RailSpec | null = null // 내가 시작한 왕복(초록)
+      let bottom: RailSpec | null = null // 상대가 시작한 왕복(주황)
+      let topArr = 0
+      let bottomArr = 0
+      let timeMs = 0
+      let anyOut = false // 내가 보낸 편지 운행 중(방향)
+      let anyIn = false // 상대가 보낸 편지 운행 중(방향)
+
       // 매칭 후: 색=스레드 시작자, 방향=현재 발신자. 한 트랙에 둘이면 가장 최근 것 표시.
       for (const t of data.transit) {
         const { cell, elapsed } = cellOf(t.arrivalAt)
@@ -455,26 +497,27 @@ export default function HomePage() {
           if (t.arrivalAt >= bottomArr) { bottom = spec; bottomArr = t.arrivalAt }
         }
       }
-    }
-    outgoingInTransit = anyOut
+      outgoingInTransit = anyOut
 
-    if (top || bottom) {
-      state = anyOut ? 3 : 5
-      const label =
-        anyOut && anyIn
-          ? `${nick} 님과 편지가 오가는 중`
-          : anyOut
-            ? `${nick} 님께 편지가 가는 중`
-            : `${nick} 님의 편지가 오는 중`
-      // 매칭 전이면 오른쪽 편지집을 AI 아이콘 + 'AI 마음친구'로 표시
-      const partnerLetterbox = data.isAiPartner ? (
-        <span className="flex flex-col items-center gap-[3px]">
-          <Avatar kind="ai" size={12} />AI 마음친구
-        </span>
-      ) : undefined
-      const legendMine = data.isAiPartner ? '내 편지' : '내가 시작한 편지'
-      const legendTheirs = data.isAiPartner ? 'AI 답장' : '상대가 시작한 편지'
-      progress = { label, time: formatElapsed(timeMs, totalMs), top, bottom, partnerLetterbox, legendMine, legendTheirs }
+      if (top || bottom) {
+        state = anyOut ? 3 : 5
+        const label =
+          anyOut && anyIn
+            ? `${nick} 님과 편지가 오가는 중`
+            : anyOut
+              ? `${nick} 님께 편지가 가는 중`
+              : `${nick} 님의 편지가 오는 중`
+        progress = {
+          label,
+          time: formatElapsed(timeMs, HUMAN_TOTAL_MS),
+          rails: [
+            { color: OUT_COLOR, dir: top?.dir ?? 'out', cell: top ? top.cell : null },
+            { color: IN_COLOR, dir: bottom?.dir ?? 'in', cell: bottom ? bottom.cell : null },
+          ],
+          legendMine: '내가 시작한 편지',
+          legendTheirs: '상대가 시작한 편지',
+        }
+      }
     }
   }
 

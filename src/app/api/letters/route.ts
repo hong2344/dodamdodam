@@ -93,11 +93,13 @@ export async function POST(request: Request) {
     if (replied) originalLetterId = replied.id
   }
 
-  // sent_at = 도착(arrival) 시각. 매칭 상대에게 가는 편지는 3시간, AI 관련 편지는 1시간 뒤 도착.
+  // sent_at = 도착(arrival) 시각.
+  // - 매칭 상대(사람)에게 가는 편지: 3시간 뒤 도착.
+  // - 매칭 전 AI: 내 편지는 30분 뒤 AI 도착, AI 답장은 그로부터 30분 뒤(총 1시간) 나에게 도착.
   const HUMAN_DELIVERY_MS = 3 * 60 * 60 * 1000
-  const AI_DELIVERY_MS = 60 * 60 * 1000
+  const AI_LEG_MS = 30 * 60 * 1000
   const userArrivalAt = new Date(
-    Date.now() + (partnerId ? HUMAN_DELIVERY_MS : AI_DELIVERY_MS),
+    Date.now() + (partnerId ? HUMAN_DELIVERY_MS : AI_LEG_MS),
   ).toISOString()
 
   const { data: sentLetter, error: sentError } = await admin
@@ -138,7 +140,8 @@ export async function POST(request: Request) {
   let aiArrivalAt: string | null = null
   if (shouldAiReply) {
     const aiContent = await generateAiLetterReply(letterContent)
-    aiArrivalAt = new Date(Date.now() + AI_DELIVERY_MS).toISOString()
+    // AI 답장은 내 편지가 도착(30분)한 뒤 다시 30분 → 보낸 시점 기준 총 1시간 뒤 도착.
+    aiArrivalAt = new Date(Date.now() + 2 * AI_LEG_MS).toISOString()
     const { error: aiError } = await admin
       .from('letters')
       .insert({
