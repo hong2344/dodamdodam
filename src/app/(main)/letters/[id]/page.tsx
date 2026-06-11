@@ -74,12 +74,9 @@ export default function ReadLetterPage() {
       const isAiSender = letter.sender_type === 'ai'
       const isAiReceiver = letter.receiver_type === 'ai'
 
-      // 받은 편지를 처음 읽는 경우 read_at 업데이트
+      // 받은 편지를 처음 읽는 경우: 서버에서 read_at 기록 + (사람 편지면) 발신자에게 열람 푸시.
       if (isIncoming && !letter.read_at) {
-        await supabase
-          .from('letters')
-          .update({ read_at: new Date().toISOString() })
-          .eq('id', letter.id)
+        fetch(`/api/letters/${letter.id}/read`, { method: 'POST' }).catch(() => undefined)
       }
 
       setData({

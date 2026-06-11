@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Btn from '@/components/Btn'
 import Chip from '@/components/Chip'
@@ -15,12 +15,23 @@ interface CategoryRow {
 }
 
 export default function CategoryPage() {
+  return (
+    <Suspense fallback={null}>
+      <CategoryContent />
+    </Suspense>
+  )
+}
+
+function CategoryContent() {
   const [categories, setCategories] = useState<CategoryRow[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  // mode=change: 기존 사용자가 일 20-24시 신청창에 고민 카테고리를 바꾸는 흐름.
+  const isChangeMode = searchParams?.get('mode') === 'change'
 
   const handleNext = async () => {
     if (!selected) return
@@ -39,6 +50,11 @@ export default function CategoryPage() {
       return
     }
     if (res.status === 403) {
+      // 변경 모드: 신청 시간창이 아니면 서버 안내 문구를 그대로 보여준다(리다이렉트하지 않음).
+      if (isChangeMode) {
+        setError(data?.message || '매칭 신청은 매주 일요일 저녁 8시~자정에만 가능해요.')
+        return
+      }
       window.localStorage.setItem('dodam:category', selected)
       router.push('/nickname?next=/home')
       return
@@ -48,7 +64,8 @@ export default function CategoryPage() {
       return
     }
     window.localStorage.setItem('dodam:category', selected)
-    router.push('/nickname?next=/matching')
+    // 변경 모드는 온보딩(닉네임)을 건너뛰고 홈으로 복귀한다.
+    router.push(isChangeMode ? '/home?categoryChanged=1' : '/nickname?next=/matching')
   }
 
   useEffect(() => {
@@ -65,21 +82,39 @@ export default function CategoryPage() {
         }
         setLoading(false)
       })
-  }, [])
+    // 변경 모드면 현재 선택된 카테고리를 미리 하이라이트한다.
+    if (isChangeMode) {
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (!user) return
+        supabase
+          .from('profiles')
+          .select('match_category')
+          .eq('id', user.id)
+          .maybeSingle()
+          .then(({ data: profile }) => {
+            if (profile?.match_category) setSelected(profile.match_category)
+          })
+      })
+    }
+  }, [isChangeMode])
 
   return (
     <div className="min-h-dvh bg-[#F5F0E6] flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-[375px] flex flex-col" style={{ minHeight: 'min(680px, calc(100dvh - 6rem))' }}>
 
         <div className="flex justify-between items-center">
-          <Link href="/avatar" className="font-mono text-[11px]">←</Link>
-          <Chip>STEP 03 / 04</Chip>
+          <Link href={isChangeMode ? '/home' : '/avatar'} className="font-mono text-[11px]">←</Link>
+          {isChangeMode ? <Chip>이번 주 매칭</Chip> : <Chip>STEP 03 / 04</Chip>}
         </div>
 
         <div className="mt-6">
           <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-55">지금 내 마음의 결</p>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 30, lineHeight: 1.15, marginTop: 10, fontWeight: 400 }}>
-            자신의 <em style={{ color: '#00643E', fontStyle: 'italic' }}>관심사를</em><br />선택해주세요.
+            {isChangeMode ? (
+              <>이번 주엔 어떤 <em style={{ color: '#00643E', fontStyle: 'italic' }}>고민을</em><br />나눠볼까요?</>
+            ) : (
+              <>자신의 <em style={{ color: '#00643E', fontStyle: 'italic' }}>관심사를</em><br />선택해주세요.</>
+            )}
           </h2>
         </div>
 
@@ -138,7 +173,7 @@ export default function CategoryPage() {
           <Btn
             onClick={handleNext}
             disabled={selected === null || saving}
-          >{saving ? '저장 중…' : '선택 완료 →'}</Btn>
+          >{saving ? '저장 중…' : isChangeMode ? '이대로 신청하기 →' : '선택 완료 →'}</Btn>
         </div>
 
       </div>

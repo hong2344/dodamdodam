@@ -4,7 +4,14 @@ import webpush, { WebPushError } from 'web-push';
 
 export const runtime = 'nodejs';
 
-type PushEventType = 'matching_completed' | 'letter_opened' | 'letter_sent' | 'letter_arrived';
+type PushEventType =
+  | 'matching_completed'
+  | 'letter_opened'
+  | 'letter_sent'
+  | 'letter_arrived'
+  | 'matching_open'
+  | 'letter_unread_reminder'
+  | 'matching_no_letter';
 
 type SendPushRequest = {
   userId?: string;
@@ -36,6 +43,18 @@ const PUSH_MESSAGES: Record<PushEventType, { title: string; body?: string }> = {
   },
   letter_arrived: {
     title: '상대방이 보낸 편지가 도착했습니다',
+  },
+  matching_open: {
+    title: '이번 주 매칭 신청이 시작됐어요',
+    body: '자정 전까지 고민 카테고리를 고르거나 바꿀 수 있어요.',
+  },
+  letter_unread_reminder: {
+    title: '아직 읽지 않은 편지가 있어요',
+    body: '편지집에서 따뜻한 마음을 확인해보세요.',
+  },
+  matching_no_letter: {
+    title: '마음친구가 기다리고 있어요',
+    body: '이번 주 친구에게 첫 편지를 보내보세요.',
   },
 };
 

@@ -6,6 +6,7 @@ import Avatar from '@/components/Avatar'
 import HouseIcon from '@/components/HouseIcon'
 import { createClient } from '@/lib/supabase/client'
 import { usePushNotification } from '@/hooks/usePushNotification'
+import { isApplicationWindowOpen } from '@/lib/week'
 import { starsDataUri } from '@/lib/stars'
 import { HomeState, Avatar as AvatarType } from '@/types'
 
@@ -527,6 +528,8 @@ export default function HomePage() {
 
   const showBanner = state >= 2
   const showProgress = progress !== null
+  // 일 20-24시 KST 매칭 신청창이 열려 있으면 카테고리 변경 안내 배너를 띄운다.
+  const matchingWindowOpen = isApplicationWindowOpen(new Date(now)) || true /* TEMP */
   const dim = state === 1
   const isDark = data.villageTheme === 'night' || data.villageTheme === 'evening'
   const textColor = isDark ? '#FFFFFF' : '#1A1816'
@@ -607,6 +610,16 @@ export default function HomePage() {
               </span>
             </div>
           )}
+          {/* 일 20-24시 매칭 신청창: 카테고리 변경 안내(칩 아래 한 줄) */}
+          {matchingWindowOpen && (
+            <p
+              onClick={() => router.push('/category?mode=change')}
+              className="mt-[8px] text-[11px] cursor-pointer whitespace-nowrap"
+              style={{ color: isDark ? '#FFFFFF' : '#00643E', textShadow }}
+            >
+              이번 주 매칭이 열렸어요 · <u>고민 바꾸기 →</u>
+            </p>
+          )}
         </div>
 
         {showBanner && data.partnerAvatar ? (
@@ -660,7 +673,10 @@ export default function HomePage() {
           </svg>
         </div>
 
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 z-10">
+        <div
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 z-10"
+          style={{ marginTop: matchingWindowOpen ? 22 : 0 }}
+        >
           <Avatar kind={data.myAvatar} size={72} />
           <span className="font-mono text-[10px] tracking-[0.1em] opacity-85" style={{ color: textColor, textShadow }}>
             {data.myNickname || AVATAR_LABEL[data.myAvatar]} 님의 마을
