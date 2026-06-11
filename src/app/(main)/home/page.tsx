@@ -598,42 +598,41 @@ export default function HomePage() {
           <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-70" style={{ textShadow }}>WELCOME TO</p>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, margin: '4px 0 0', fontWeight: 400, color: textColor, textShadow }}>{v.name} 마을</h2>
           {data.categoryName && (
-            <div className="mt-[10px] flex justify-center">
-              <span
-                className="relative inline-flex items-center gap-[5px] pl-[8px] pr-[11px] py-[4px] rounded-full text-[11px] font-medium"
-                style={{
-                  background: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.78)',
-                  color: isDark ? '#FFFFFF' : '#00643E',
-                  border: matchingWindowOpen
-                    ? '2px solid #00643E'
-                    : `1px solid ${isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,100,62,0.25)'}`,
-                  backdropFilter: 'blur(2px)',
-                }}
-              >
+            <>
+              {/* 일 20-24시 매칭 신청창 안내 */}
+              {matchingWindowOpen && (
+                <p className="mt-[10px] text-[11px]" style={{ color: isDark ? '#FFFFFF' : '#00643E', textShadow }}>
+                  이번 주 매칭 신청이 열렸어요
+                </p>
+              )}
+              <div className={`flex justify-center items-center gap-[8px] flex-wrap ${matchingWindowOpen ? 'mt-[6px]' : 'mt-[10px]'}`}>
                 <span
-                  className="font-mono text-[9px] tracking-[0.06em] px-[6px] py-[2px] rounded-full"
-                  style={{ background: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,100,62,0.1)' }}
-                >고민</span>
-                {data.categoryEmoji && <span className="leading-none">{data.categoryEmoji}</span>}
-                {data.categoryName}
+                  className="inline-flex items-center gap-[5px] pl-[8px] pr-[11px] py-[4px] rounded-full text-[11px] font-medium"
+                  style={{
+                    background: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.78)',
+                    color: isDark ? '#FFFFFF' : '#00643E',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,100,62,0.25)'}`,
+                    backdropFilter: 'blur(2px)',
+                  }}
+                >
+                  <span
+                    className="font-mono text-[9px] tracking-[0.06em] px-[6px] py-[2px] rounded-full"
+                    style={{ background: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,100,62,0.1)' }}
+                  >고민</span>
+                  {data.categoryEmoji && <span className="leading-none">{data.categoryEmoji}</span>}
+                  {data.categoryName}
+                </span>
                 {matchingWindowOpen && (
                   <span
-                    className="absolute -top-[3px] -right-[3px] w-[9px] h-[9px] rounded-full"
-                    style={{ background: '#E5484D', border: '1.5px solid #fff' }}
-                  />
+                    onClick={() => router.push('/category?mode=change')}
+                    className="inline-flex items-center gap-[5px] rounded-full px-[13px] py-[6px] text-[11px] font-semibold text-white cursor-pointer"
+                    style={{ background: '#00643E' }}
+                  >
+                    고민 카테고리 바꾸기 →
+                  </span>
                 )}
-              </span>
-            </div>
-          )}
-          {/* 일 20-24시 매칭 신청창: 카테고리 변경 안내(칩 아래 한 줄) */}
-          {matchingWindowOpen && (
-            <p
-              onClick={() => router.push('/category?mode=change')}
-              className="mt-[9px] text-[11.5px] font-semibold cursor-pointer whitespace-nowrap"
-              style={{ color: isDark ? '#FFFFFF' : '#00643E', textShadow }}
-            >
-              매칭 신청이 열렸어요 — 탭해서 <u>고민 바꾸기 →</u>
-            </p>
+              </div>
+            </>
           )}
         </div>
 
