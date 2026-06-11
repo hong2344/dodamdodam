@@ -601,13 +601,14 @@ export default function HomePage() {
             <>
               {/* 일 20-24시 매칭 신청창 안내 */}
               {matchingWindowOpen && (
-                <p className="mt-[10px] text-[11px]" style={{ color: isDark ? '#FFFFFF' : '#00643E', textShadow }}>
-                  이번 주 매칭 신청이 열렸어요
+                <p className="mt-[10px] text-[11px] leading-[1.5] px-2" style={{ color: isDark ? '#FFFFFF' : '#00643E', textShadow }}>
+                  다음 주에 새로운 매칭이 진행돼요.<br />
+                  고민 카테고리를 변경하고 싶다면, 매칭 전에 꼭 수정해 주세요.
                 </p>
               )}
               <div className={`flex justify-center items-center gap-[8px] flex-wrap ${matchingWindowOpen ? 'mt-[6px]' : 'mt-[10px]'}`}>
                 <span
-                  className="inline-flex items-center gap-[5px] pl-[8px] pr-[11px] py-[4px] rounded-full text-[11px] font-medium"
+                  className="inline-flex items-center gap-[5px] pl-[8px] pr-[11px] h-[28px] rounded-full text-[11px] font-medium"
                   style={{
                     background: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.78)',
                     color: isDark ? '#FFFFFF' : '#00643E',
@@ -625,10 +626,15 @@ export default function HomePage() {
                 {matchingWindowOpen && (
                   <span
                     onClick={() => router.push('/category?mode=change')}
-                    className="inline-flex items-center gap-[5px] rounded-full px-[13px] py-[6px] text-[11px] font-semibold text-white cursor-pointer"
-                    style={{ background: '#00643E' }}
+                    className="inline-flex items-center gap-[5px] pl-[11px] pr-[10px] h-[28px] rounded-full text-[11px] font-semibold cursor-pointer"
+                    style={{
+                      background: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,100,62,0.1)',
+                      color: isDark ? '#FFFFFF' : '#00643E',
+                      border: `1px solid ${isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,100,62,0.25)'}`,
+                    }}
                   >
-                    고민 카테고리 바꾸기 →
+                    고민 카테고리 바꾸기
+                    <span className="font-mono">→</span>
                   </span>
                 )}
               </div>
