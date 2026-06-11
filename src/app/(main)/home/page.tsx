@@ -600,11 +600,13 @@ export default function HomePage() {
           {data.categoryName && (
             <div className="mt-[10px] flex justify-center">
               <span
-                className="inline-flex items-center gap-[5px] pl-[8px] pr-[11px] py-[4px] rounded-full text-[11px] font-medium"
+                className="relative inline-flex items-center gap-[5px] pl-[8px] pr-[11px] py-[4px] rounded-full text-[11px] font-medium"
                 style={{
                   background: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.78)',
                   color: isDark ? '#FFFFFF' : '#00643E',
-                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,100,62,0.25)'}`,
+                  border: matchingWindowOpen
+                    ? '2px solid #00643E'
+                    : `1px solid ${isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,100,62,0.25)'}`,
                   backdropFilter: 'blur(2px)',
                 }}
               >
@@ -614,6 +616,12 @@ export default function HomePage() {
                 >고민</span>
                 {data.categoryEmoji && <span className="leading-none">{data.categoryEmoji}</span>}
                 {data.categoryName}
+                {matchingWindowOpen && (
+                  <span
+                    className="absolute -top-[3px] -right-[3px] w-[9px] h-[9px] rounded-full"
+                    style={{ background: '#E5484D', border: '1.5px solid #fff' }}
+                  />
+                )}
               </span>
             </div>
           )}
@@ -621,10 +629,10 @@ export default function HomePage() {
           {matchingWindowOpen && (
             <p
               onClick={() => router.push('/category?mode=change')}
-              className="mt-[8px] text-[11px] cursor-pointer whitespace-nowrap"
+              className="mt-[9px] text-[11.5px] font-semibold cursor-pointer whitespace-nowrap"
               style={{ color: isDark ? '#FFFFFF' : '#00643E', textShadow }}
             >
-              이번 주 매칭이 열렸어요 · <u>고민 바꾸기 →</u>
+              매칭 신청이 열렸어요 — 탭해서 <u>고민 바꾸기 →</u>
             </p>
           )}
         </div>
