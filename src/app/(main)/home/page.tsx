@@ -198,6 +198,13 @@ export default function HomePage() {
   const [data, setData] = useState<HomeData | null>(null)
   const [loading, setLoading] = useState(true)
   const [loggingOut, setLoggingOut] = useState(false)
+  // ?preview=window 로 접속하면 신청창 배너를 시간과 무관하게 표시(미리보기용, 서버 로직엔 영향 없음)
+  const [previewWindow, setPreviewWindow] = useState(false)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setPreviewWindow(new URLSearchParams(window.location.search).get('preview') === 'window')
+    }
+  }, [])
 
   const push = usePushNotification({
     getAccessToken: async () => {
@@ -529,7 +536,7 @@ export default function HomePage() {
   const showBanner = state >= 2
   const showProgress = progress !== null
   // 일 20-24시 KST 매칭 신청창이 열려 있으면 카테고리 변경 안내 배너를 띄운다.
-  const matchingWindowOpen = isApplicationWindowOpen(new Date(now)) || true /* TEMP */
+  const matchingWindowOpen = isApplicationWindowOpen(new Date(now)) || previewWindow || true /* TEMP */
   const dim = state === 1
   const isDark = data.villageTheme === 'night' || data.villageTheme === 'evening'
   const textColor = isDark ? '#FFFFFF' : '#1A1816'
