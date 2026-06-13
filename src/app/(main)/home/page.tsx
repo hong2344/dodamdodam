@@ -570,7 +570,7 @@ export default function HomePage() {
   const showBanner = state >= 2
   const showProgress = progress !== null
   // 일 20-24시 KST 매칭 신청창이 열려 있으면 카테고리 변경 안내 배너를 띄운다.
-  const matchingWindowOpen = isApplicationWindowOpen(new Date(now)) || previewWindow || true /* TEMP */
+  const matchingWindowOpen = isApplicationWindowOpen(new Date(now)) || previewWindow
   // 신청창이 실제로 열려 있을 때만 마감까지 남은 시간(ms). TEMP/preview로 강제된 경우엔 null → 안내 문구만.
   const windowEnd = applicationWindowEnd(new Date(now))
   const windowRemainMs = windowEnd ? windowEnd.getTime() - now : null
