@@ -18,6 +18,11 @@ export async function POST(request: NextRequest) {
 
   const isInstant = process.env.MATCH_MODE === 'instant'
 
+  // TEMP(테스트용): 테스트 계정(dodam.test)에 한해 신청창 시간 제한(일 20-24시)을 우회한다.
+  // 라이브에서 카테고리 변경 흐름을 토요일에도 끝까지 검증하기 위함. 정식 오픈 전 제거할 것.
+  const TEST_WINDOW_BYPASS_USER_ID = '16b161be-4559-4fff-a970-9366b17edc10'
+  const bypassWindow = user.id === TEST_WINDOW_BYPASS_USER_ID
+
   const body = (await request.json().catch(() => ({}))) as { category?: string }
   const category = body?.category
 
@@ -25,7 +30,7 @@ export async function POST(request: NextRequest) {
   //  - 첫 신청(매칭 이력 없는 신규 가입자)은 아무 때나 허용 → 다음 월요일 배치에서 매칭.
   //  - 재신청(이전에 매칭된 적 있는 사용자)은 운영 모드에서 신청 시간창(일 20-24시 KST)에만 허용.
   if (category) {
-    if (!isInstant && !isApplicationWindowOpen()) {
+    if (!isInstant && !bypassWindow && !isApplicationWindowOpen()) {
       const admin = createAdminClient()
       const { count } = await admin
         .from('matches')
