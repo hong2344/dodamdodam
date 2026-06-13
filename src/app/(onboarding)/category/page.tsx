@@ -14,6 +14,21 @@ interface CategoryRow {
   sort_order: number
 }
 
+// 카드 위에 살짝 떠 있는 초록 핀 태그(★). 변경 모드에서 '이번 주'/'다음 주' 기준점 표시에 공용으로 쓴다.
+function PinTag({ label }: { label: string }) {
+  return (
+    <span
+      className="absolute -top-[12px] left-1/2 -translate-x-1/2 z-10 inline-flex items-center gap-[4px] text-[9px] font-semibold leading-none px-[10px] py-[5px] rounded-full whitespace-nowrap"
+      style={{ background: '#00643E', color: '#FFFFFF', boxShadow: '0 3px 8px rgba(0,100,62,0.28)' }}
+    >
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 2 9.2 8.6 2 9.3l5.5 4.8L5.8 21 12 17.3 18.2 21l-1.7-6.9L22 9.3l-7.2-.7Z" />
+      </svg>
+      {label}
+    </span>
+  )
+}
+
 export default function CategoryPage() {
   return (
     <Suspense fallback={null}>
@@ -25,6 +40,12 @@ export default function CategoryPage() {
 function CategoryContent() {
   const [categories, setCategories] = useState<CategoryRow[]>([])
   const [selected, setSelected] = useState<string | null>(null)
+  // 변경 모드 기준점(선택을 따라 움직이지 않는 고정 라벨용):
+  //  - currentMatchCat: 이번 주 진행 중인 매칭의 고민
+  //  - defaultCat: 들어올 때 디폴트로 선택돼 있는 값(= profile.match_category = 다음 매칭에 쓰일 고민)
+  // defaultCat ≠ currentMatchCat 이면 '이미 다음 주용으로 바꾼 상태'로 본다.
+  const [currentMatchCat, setCurrentMatchCat] = useState<string | null>(null)
+  const [defaultCat, setDefaultCat] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -82,7 +103,7 @@ function CategoryContent() {
         }
         setLoading(false)
       })
-    // 변경 모드면 현재 선택된 카테고리를 미리 하이라이트한다.
+    // 변경 모드: 디폴트 선택값(profile.match_category)과 이번 주 매칭 고민(match.category)을 읽는다.
     if (isChangeMode) {
       supabase.auth.getUser().then(({ data: { user } }) => {
         if (!user) return
@@ -92,11 +113,31 @@ function CategoryContent() {
           .eq('id', user.id)
           .maybeSingle()
           .then(({ data: profile }) => {
-            if (profile?.match_category) setSelected(profile.match_category)
+            if (profile?.match_category) {
+              setSelected(profile.match_category)
+              setDefaultCat(profile.match_category)
+            }
+          })
+        // 이번 주 = 진행 중인(active) 매칭의 고민
+        supabase
+          .from('matches')
+          .select('category')
+          .eq('status', 'active')
+          .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+          .then(({ data: match }) => {
+            if (match?.category) setCurrentMatchCat(match.category)
           })
       })
     }
   }, [isChangeMode])
+
+  // 변경 모드 상태: 디폴트(다음 매칭에 쓰일 값)가 이번 주 매칭 고민과 다르면 '이미 바꾼 상태'.
+  const alreadyChanged = !!currentMatchCat && !!defaultCat && currentMatchCat !== defaultCat
+  // 디폴트 선택 타일 위에 붙는 단일 라벨.
+  const defaultLabel = alreadyChanged ? '다음 주에 매칭될 카테고리' : '이번 주에 선택했던 카테고리'
 
   return (
     <div className="min-h-dvh bg-[#F5F0E6] flex items-center justify-center px-6 py-12">
@@ -104,18 +145,27 @@ function CategoryContent() {
 
         <div className="flex justify-between items-center">
           <Link href={isChangeMode ? '/home' : '/avatar'} className="font-mono text-[11px]">←</Link>
-          {isChangeMode ? <Chip>이번 주 매칭</Chip> : <Chip>STEP 03 / 04</Chip>}
+          {isChangeMode ? <span /> : <Chip>STEP 03 / 04</Chip>}
         </div>
 
         <div className="mt-6">
-          <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-55">지금 내 마음의 결</p>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 30, lineHeight: 1.15, marginTop: 10, fontWeight: 400 }}>
+          {!isChangeMode && (
+            <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-55">지금 내 마음의 결</p>
+          )}
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: isChangeMode ? 25 : 30, lineHeight: 1.2, marginTop: isChangeMode ? 0 : 10, fontWeight: 400 }}>
             {isChangeMode ? (
-              <>이번 주엔 어떤 <em style={{ color: '#00643E', fontStyle: 'italic' }}>고민을</em><br />나눠볼까요?</>
+              <>다음 주 매칭을 위해<br />카테고리를 <em style={{ color: '#00643E', fontStyle: 'italic' }}>선택</em>해주세요.</>
             ) : (
               <>자신의 <em style={{ color: '#00643E', fontStyle: 'italic' }}>관심사를</em><br />선택해주세요.</>
             )}
           </h2>
+          {isChangeMode && (
+            <p className="mt-3 text-[12px] leading-[1.5] text-[#5C544A]">
+              {alreadyChanged
+                ? '다음 주에 매칭될 카테고리를 변경하고 싶다면 아래에서 변경해주세요.'
+                : '이번 주에 선택했던 카테고리를 동일하게 다음 주에도 할 예정이면 따로 변경하지 않아도 돼요.'}
+            </p>
+          )}
         </div>
 
         {loading && (
@@ -129,19 +179,26 @@ function CategoryContent() {
         )}
 
         {!loading && !error && (
-          <div className="mt-6 grid grid-cols-2 gap-[10px]">
+          <div className="mt-7 grid grid-cols-2 gap-x-[10px] gap-y-[16px]">
             {categories.map((c) => {
               const active = selected === c.id
               return (
                 <div
                   key={c.id}
                   onClick={() => setSelected(c.id)}
-                  className="cursor-pointer flex flex-col items-center gap-[10px] px-[14px] py-[18px] rounded-[16px]"
+                  className="relative cursor-pointer flex flex-col items-center gap-[10px] px-[14px] py-[18px] rounded-[16px]"
                   style={{
                     border: active ? '2px solid #00643E' : '1px solid #E0D9C7',
                     background: active ? 'rgba(0,100,62,0.05)' : 'rgba(255,255,255,0.55)',
                   }}
                 >
+                  {/* 변경 모드 기준점 핀 태그(선택을 따라 움직이지 않음):
+                      - 디폴트(다음 매칭에 쓰일) 카테고리 위에 defaultLabel
+                      - 이미 바꾼 상태면, 이번 주 매칭 카테고리 타일에도 같은 디자인으로 표시 */}
+                  {isChangeMode && c.id === defaultCat && <PinTag label={defaultLabel} />}
+                  {isChangeMode && alreadyChanged && c.id === currentMatchCat && (
+                    <PinTag label="이번 주에 매칭된 카테고리" />
+                  )}
                   <span
                     className="flex items-center justify-center rounded-full text-[22px]"
                     style={{ width: 52, height: 52, background: active ? 'rgba(0,100,62,0.12)' : '#EFE9DA' }}
@@ -153,7 +210,7 @@ function CategoryContent() {
           </div>
         )}
 
-        {!loading && !error && (
+        {!loading && !error && !isChangeMode && (
           <div
             className="mt-4 flex items-start gap-[7px] px-[12px] py-[10px] rounded-[10px]"
             style={{ background: 'rgba(0,100,62,0.05)', border: '1px solid #E0D9C7' }}
@@ -165,15 +222,17 @@ function CategoryContent() {
           </div>
         )}
 
-        <p className="mt-3 font-mono text-[10px] opacity-55 tracking-[0.08em] text-center">같은 결의 친구와 만나요</p>
+        {!isChangeMode && (
+          <p className="mt-3 font-mono text-[10px] opacity-55 tracking-[0.08em] text-center">같은 결의 친구와 만나요</p>
+        )}
 
         {error && !loading && <p className="mt-2 text-[12px] text-red-600">{error}</p>}
 
-        <div className="mt-auto pt-2">
+        <div className="mt-auto pt-6">
           <Btn
             onClick={handleNext}
             disabled={selected === null || saving}
-          >{saving ? '저장 중…' : isChangeMode ? '이대로 신청하기 →' : '선택 완료 →'}</Btn>
+          >{saving ? '저장 중…' : isChangeMode ? '변경 완료' : '선택 완료 →'}</Btn>
         </div>
 
       </div>

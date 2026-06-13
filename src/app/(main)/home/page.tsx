@@ -6,7 +6,7 @@ import Avatar from '@/components/Avatar'
 import HouseIcon from '@/components/HouseIcon'
 import { createClient } from '@/lib/supabase/client'
 import { usePushNotification } from '@/hooks/usePushNotification'
-import { isApplicationWindowOpen } from '@/lib/week'
+import { isApplicationWindowOpen, applicationWindowEnd } from '@/lib/week'
 import { starsDataUri } from '@/lib/stars'
 import { HomeState, Avatar as AvatarType } from '@/types'
 
@@ -58,6 +58,36 @@ function formatElapsed(ms: number, totalMs: number): string {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
   }
   return `${fmt(ms)} / ${fmt(totalMs)}`
+}
+
+// 신청창 마감까지 남은 시간을 'N시간 M분' / 'M분'으로 표시 (초 단위는 생략해 차분하게).
+function formatCountdown(ms: number): string {
+  const totalMin = Math.max(0, Math.floor(ms / 60000))
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  return h > 0 ? `${h}시간 ${m}분` : `${m}분`
+}
+
+// 홈 상단 고민 카테고리 칩. tag = '이번 주' / '다음 주' / '고민'.
+function CategoryChip({ tag, cat, isDark }: { tag: string; cat: { name: string; emoji: string | null }; isDark: boolean }) {
+  return (
+    <span
+      className="inline-flex items-center gap-[5px] pl-[8px] pr-[11px] h-[28px] rounded-full text-[11px] font-medium"
+      style={{
+        background: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.78)',
+        color: isDark ? '#FFFFFF' : '#00643E',
+        border: `1px solid ${isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,100,62,0.25)'}`,
+        backdropFilter: 'blur(2px)',
+      }}
+    >
+      <span
+        className="font-mono text-[9px] tracking-[0.06em] px-[6px] py-[2px] rounded-full"
+        style={{ background: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,100,62,0.1)' }}
+      >{tag}</span>
+      {cat.emoji && <span className="leading-none">{cat.emoji}</span>}
+      {cat.name}
+    </span>
+  )
 }
 
 // 한 트랙에 떠 있는 편지. dir=현재 보내는 사람 기준 진행 방향(out=왼→오, in=오→왼).
@@ -187,9 +217,17 @@ interface HomeData {
   isAiPartner: boolean
   // 읽지 않은 받은 편지 수 (편지집 배지)
   unreadCount: number
-  // 현재 선택한 고민(관심사) 카테고리 표시용
-  categoryName: string | null
-  categoryEmoji: string | null
+  // 이번 주 고민(= 진행 중인 매칭이 성사된 카테고리). 매칭 전이면 null.
+  thisWeekCat: CategoryInfo | null
+  // 다음 주 고민(= profiles.match_category. 일 20-24시에 바꾸면 다음 매칭에 반영).
+  nextWeekCat: CategoryInfo | null
+  // 이번 주 매칭 고민과 다르게 다음 주용으로 이미 바꿨는지 여부 (홈 버튼 문구 토글용).
+  categoryChanged: boolean
+}
+
+interface CategoryInfo {
+  name: string
+  emoji: string | null
 }
 
 export default function HomePage() {
@@ -262,20 +300,14 @@ export default function HomePage() {
         return
       }
 
-      // 현재 선택한 고민(관심사) 카테고리: 이모지 + 이름
-      let categoryName: string | null = null
-      let categoryEmoji: string | null = null
-      if (profile?.match_category) {
-        const { data: cat } = await supabase
-          .from('interest_categories')
-          .select('name, emoji')
-          .eq('id', profile.match_category)
-          .maybeSingle()
-        if (cat) {
-          categoryName = cat.name ?? null
-          categoryEmoji = cat.emoji ?? null
-        }
-      }
+      // 고민(관심사) 카테고리 맵 (6개뿐이라 한 번에 받아 메모리에서 id→{name,emoji} 해석)
+      const { data: cats } = await supabase
+        .from('interest_categories')
+        .select('id, name, emoji')
+      const catMap = new Map<string, CategoryInfo>()
+      cats?.forEach((c) => catMap.set(c.id, { name: c.name ?? '', emoji: c.emoji ?? null }))
+      // 다음 주 고민 = 내 현재 선호(profile.match_category)
+      const nextWeekCat = profile?.match_category ? catMap.get(profile.match_category) ?? null : null
 
       // 3) 내 마을 정보
       let villageTheme = 'morning'
@@ -291,7 +323,7 @@ export default function HomePage() {
       // 4) 활성 매칭
       const { data: match } = await supabase
         .from('matches')
-        .select('id, user_a_id, user_b_id')
+        .select('id, user_a_id, user_b_id, category')
         .eq('status', 'active')
         .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
@@ -409,8 +441,10 @@ export default function HomePage() {
         incomingArrivalAt,
         isAiPartner,
         unreadCount: unreadCount ?? 0,
-        categoryName,
-        categoryEmoji,
+        // 이번 주 고민 = 진행 중인 매칭이 성사된 카테고리 (없으면 null)
+        thisWeekCat: match?.category ? catMap.get(match.category) ?? null : null,
+        nextWeekCat,
+        categoryChanged: !!(match?.category && profile?.match_category && match.category !== profile.match_category),
       })
       setLoading(false)
     })()
@@ -537,6 +571,9 @@ export default function HomePage() {
   const showProgress = progress !== null
   // 일 20-24시 KST 매칭 신청창이 열려 있으면 카테고리 변경 안내 배너를 띄운다.
   const matchingWindowOpen = isApplicationWindowOpen(new Date(now)) || previewWindow || true /* TEMP */
+  // 신청창이 실제로 열려 있을 때만 마감까지 남은 시간(ms). TEMP/preview로 강제된 경우엔 null → 안내 문구만.
+  const windowEnd = applicationWindowEnd(new Date(now))
+  const windowRemainMs = windowEnd ? windowEnd.getTime() - now : null
   const dim = state === 1
   const isDark = data.villageTheme === 'night' || data.villageTheme === 'evening'
   const textColor = isDark ? '#FFFFFF' : '#1A1816'
@@ -597,32 +634,30 @@ export default function HomePage() {
         <div className="px-6 text-center" style={{ marginTop: 18 }}>
           <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-70" style={{ textShadow }}>WELCOME TO</p>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, margin: '4px 0 0', fontWeight: 400, color: textColor, textShadow }}>{v.name} 마을</h2>
-          {data.categoryName && (
+          {(data.thisWeekCat || data.nextWeekCat) && (
             <>
-              {/* 일 20-24시 매칭 신청창 안내 */}
+              {/* 일 20-24시 매칭 신청창 안내 + 마감 카운트다운 */}
               {matchingWindowOpen && (
                 <p className="mt-[10px] text-[11px] leading-[1.5] px-2" style={{ color: isDark ? '#FFFFFF' : '#00643E', textShadow }}>
                   다음 주에 새로운 매칭이 진행돼요.<br />
-                  고민 카테고리를 변경하고 싶다면, 매칭 전에 꼭 수정해 주세요.
+                  {windowRemainMs != null
+                    ? <>일요일 자정까지 <b>{formatCountdown(windowRemainMs)}</b> 안에 고민을 바꿀 수 있어요.</>
+                    : '일요일 저녁 8시~자정에 고민 카테고리를 바꿀 수 있어요.'}
                 </p>
               )}
-              <div className={`flex justify-center items-center gap-[8px] flex-wrap ${matchingWindowOpen ? 'mt-[6px]' : 'mt-[10px]'}`}>
-                <span
-                  className="inline-flex items-center gap-[5px] pl-[8px] pr-[11px] h-[28px] rounded-full text-[11px] font-medium"
-                  style={{
-                    background: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.78)',
-                    color: isDark ? '#FFFFFF' : '#00643E',
-                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,100,62,0.25)'}`,
-                    backdropFilter: 'blur(2px)',
-                  }}
-                >
-                  <span
-                    className="font-mono text-[9px] tracking-[0.06em] px-[6px] py-[2px] rounded-full"
-                    style={{ background: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,100,62,0.1)' }}
-                  >고민</span>
-                  {data.categoryEmoji && <span className="leading-none">{data.categoryEmoji}</span>}
-                  {data.categoryName}
-                </span>
+              <div className={`flex justify-center items-center gap-[8px] flex-wrap ${matchingWindowOpen ? 'mt-[8px]' : 'mt-[10px]'}`}>
+                {/* 매칭됨: 이번 주(진행 중인 매칭) 고민 칩 */}
+                {data.matchId && data.thisWeekCat && (
+                  <CategoryChip tag={matchingWindowOpen && data.categoryChanged ? '이번 주' : '고민'} cat={data.thisWeekCat} isDark={isDark} />
+                )}
+                {/* 미매칭: 다음 매칭에 쓰일 고민 칩 */}
+                {!data.matchId && data.nextWeekCat && (
+                  <CategoryChip tag="고민" cat={data.nextWeekCat} isDark={isDark} />
+                )}
+                {/* 다음 주 칩은 이번 주와 실제로 다를 때만(이미 바꾼 상태) 표시해 중복을 없앤다 */}
+                {matchingWindowOpen && data.categoryChanged && data.nextWeekCat && (
+                  <CategoryChip tag="다음 주" cat={data.nextWeekCat} isDark={isDark} />
+                )}
                 {matchingWindowOpen && (
                   <span
                     onClick={() => router.push('/category?mode=change')}
@@ -633,8 +668,20 @@ export default function HomePage() {
                       border: `1px solid ${isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,100,62,0.25)'}`,
                     }}
                   >
-                    고민 카테고리 바꾸기
-                    <span className="font-mono">→</span>
+                    {data.categoryChanged ? (
+                      <>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                        </svg>
+                        수정
+                      </>
+                    ) : (
+                      <>
+                        고민 카테고리 바꾸기
+                        <span className="font-mono">→</span>
+                      </>
+                    )}
                   </span>
                 )}
               </div>

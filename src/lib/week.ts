@@ -24,3 +24,12 @@ export function isApplicationWindowOpen(now: Date = new Date()): boolean {
 // 신청 불가 안내용 문구.
 export const APPLICATION_WINDOW_MESSAGE =
   '매칭 신청은 매주 일요일 저녁 8시~자정에만 가능해요.'
+
+// 현재 신청창이 열려 있다면 그 창이 닫히는 시각(= KST 월요일 00:00)을 반환한다.
+// 창이 열려 있지 않으면 null (마감 카운트다운은 실제 창이 열렸을 때만 보여준다).
+export function applicationWindowEnd(now: Date = new Date()): Date | null {
+  if (!isApplicationWindowOpen(now)) return null
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+  kst.setUTCHours(24, 0, 0, 0) // 다음 0시(KST 월요일 00:00)로 이동
+  return new Date(kst.getTime() - 9 * 60 * 60 * 1000)
+}
