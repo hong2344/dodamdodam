@@ -4,7 +4,7 @@ import { kstWeekStart } from '@/lib/week'
 
 export const dynamic = 'force-dynamic'
 
-// 매칭 배치 (Vercel Cron - 한국시간 월요일 00:00 = 일요일 15:00 UTC, GET으로 호출됨).
+// 매칭 배치 (Vercel Cron - 한국시간 월요일 01:00 = 일요일 16:00 UTC, GET으로 호출됨).
 // PRD: 같은 관심사 + 나이차가 작은 순으로 페어링. 실제 로직은 DB 함수 run_weekly_matching() 에 있다.
 async function handle(request: Request) {
   // Vercel Cron은 CRON_SECRET이 설정돼 있으면 Authorization: Bearer <secret> 를 보낸다.
@@ -22,7 +22,15 @@ async function handle(request: Request) {
   if (error) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
   }
-  return NextResponse.json({ ok: true, week_start: weekStart, matched: data })
+
+  const { data: notified, error: notifyError } = await supabase.rpc('send_match_notifications', {
+    p_week_start: weekStart,
+  })
+  if (notifyError) {
+    return NextResponse.json({ ok: false, error: notifyError.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true, week_start: weekStart, matched: data, notified })
 }
 
 export async function GET(request: Request) {
