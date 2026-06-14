@@ -230,12 +230,48 @@ interface CategoryInfo {
   emoji: string | null
 }
 
+interface AppNotification {
+  id: string
+  type: string
+  payload: {
+    title?: string
+    message?: string
+    body?: string
+    url?: string
+  } | null
+  created_at: string | null
+}
+
+const NOTIFICATION_TITLES: Record<string, string> = {
+  new_match: '매칭이 완료되었습니다',
+  matching_completed: '매칭이 완료되었습니다',
+  letter_opened: '상대방이 편지를 열람했습니다',
+  letter_sent: '상대방이 편지를 보냈습니다',
+  letter_arrived: '편지가 도착했습니다',
+  matching_open: '이번 주 매칭 신청이 시작됐어요',
+  letter_unread_reminder: '아직 읽지 않은 편지가 있어요',
+  matching_no_letter: '마음친구가 기다리고 있어요',
+}
+
+function formatNotificationTime(value: string | null): string {
+  if (!value) return ''
+  return new Date(value).toLocaleString('ko-KR', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export default function HomePage() {
   const router = useRouter()
   const [now, setNow] = useState<number>(() => Date.now())
   const [data, setData] = useState<HomeData | null>(null)
   const [loading, setLoading] = useState(true)
   const [loggingOut, setLoggingOut] = useState(false)
+  const [notifications, setNotifications] = useState<AppNotification[]>([])
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [notificationsLoading, setNotificationsLoading] = useState(false)
   // ?preview=window 로 접속하면 신청창 배너를 시간과 무관하게 표시(미리보기용, 서버 로직엔 영향 없음)
   const [previewWindow, setPreviewWindow] = useState(false)
   useEffect(() => {
@@ -260,6 +296,22 @@ export default function HomePage() {
     router.replace('/login')
   }
 
+  async function loadNotifications() {
+    setNotificationsLoading(true)
+    try {
+      const response = await fetch('/api/notifications', { cache: 'no-store' })
+      const body = await response.json().catch(() => null) as { notifications?: AppNotification[] } | null
+      setNotifications(body?.notifications ?? [])
+    } finally {
+      setNotificationsLoading(false)
+    }
+  }
+
+  async function handleClearNotifications() {
+    await fetch('/api/notifications', { method: 'DELETE' })
+    setNotifications([])
+  }
+
   // 테스트 모드: 매초 업데이트 (운영 모드에선 60_000으로 변경)
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 1_000)
@@ -277,6 +329,7 @@ export default function HomePage() {
         setLoading(false)
         return
       }
+      void loadNotifications()
 
       // 2) 내 프로필
       const { data: profile } = await supabase
@@ -596,28 +649,39 @@ export default function HomePage() {
         {/* 하단 노란 띠 (5px) */}
         <div className="absolute left-0 right-0 bottom-0 z-10" style={{ height: 20, background: '#F5EBC8' }} />
         <div className="pt-3 px-6 flex items-center justify-between" style={{ transform: 'translateY(10px)' }}>
-          {push.isSupported ? (
+          <div className="flex items-center gap-[10px]">
             <button
-              onClick={() => (push.isSubscribed ? push.unsubscribe() : push.requestPermissionAndSubscribe())}
-              disabled={push.isLoading}
-              aria-label={push.isSubscribed ? '알림 끄기' : '알림 켜기'}
-              className="font-mono text-[11px] tracking-[0.08em] opacity-85 hover:opacity-100 transition-opacity disabled:opacity-40 inline-flex items-center gap-[5px]"
+              onClick={() => {
+                setNotificationsOpen(true)
+                void loadNotifications()
+              }}
+              aria-label="알림 목록 열기"
+              className="relative font-mono text-[11px] tracking-[0.08em] opacity-85 hover:opacity-100 transition-opacity inline-flex items-center gap-[5px]"
               style={{ color: textColor, textShadow, background: 'transparent', border: 'none', cursor: 'pointer' }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
                 <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                {!push.isSubscribed && <line x1="3" y1="3" x2="21" y2="21" />}
               </svg>
-              {push.isLoading
-                ? '처리 중…'
-                : push.isSubscribed
-                  ? '알림 끄기'
-                  : '알림 켜기'}
+              알림
+              {notifications.length > 0 && (
+                <span className="absolute -top-[7px] -right-[10px] min-w-[18px] h-[18px] px-[4px] rounded-full bg-[#D87858] text-white font-mono text-[9px] font-bold flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.25)]">
+                  {notifications.length > 99 ? '99+' : notifications.length}
+                </span>
+              )}
             </button>
-          ) : (
-            <span />
-          )}
+            {push.isSupported && (
+              <button
+                onClick={() => (push.isSubscribed ? push.unsubscribe() : push.requestPermissionAndSubscribe())}
+                disabled={push.isLoading}
+                aria-label={push.isSubscribed ? '푸시 알림 끄기' : '푸시 알림 켜기'}
+                className="font-mono text-[10px] tracking-[0.08em] opacity-75 hover:opacity-100 transition-opacity disabled:opacity-40"
+                style={{ color: textColor, textShadow, background: 'transparent', border: 'none', cursor: 'pointer' }}
+              >
+                {push.isLoading ? '처리 중…' : push.isSubscribed ? '푸시 끄기' : '푸시 켜기'}
+              </button>
+            )}
+          </div>
           <button
             onClick={handleLogout}
             disabled={loggingOut}
@@ -776,6 +840,56 @@ export default function HomePage() {
             )}
           </div>
         </div>
+        {notificationsOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-5">
+            <div className="w-full max-w-[340px] max-h-[78dvh] rounded-[16px] bg-[#F5F0E6] border border-[#E0D9C7] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.25)] text-[#1A1816]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-55">notifications</p>
+                  <h3 className="mt-1 text-[20px] font-semibold">알림</h3>
+                </div>
+                <span className="font-mono text-[11px] text-[#00643E]">{notifications.length}개</span>
+              </div>
+
+              <div className="mt-4 max-h-[46dvh] overflow-y-auto pr-1 flex flex-col gap-2">
+                {notificationsLoading ? (
+                  <p className="py-10 text-center text-[13px] text-[#5C544A]">불러오는 중…</p>
+                ) : notifications.length === 0 ? (
+                  <p className="py-10 text-center text-[13px] text-[#5C544A]">아직 알림이 없어요.</p>
+                ) : (
+                  notifications.map((item) => {
+                    const title = item.payload?.title ?? NOTIFICATION_TITLES[item.type] ?? '알림'
+                    const message = item.payload?.message ?? item.payload?.body ?? ''
+                    return (
+                      <div key={item.id} className="rounded-[12px] bg-white/75 border border-[#E0D9C7] px-3 py-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-[13px] font-semibold leading-[1.35]">{title}</p>
+                          <span className="font-mono text-[9.5px] opacity-55 shrink-0">{formatNotificationTime(item.created_at)}</span>
+                        </div>
+                        {message && <p className="mt-1 text-[12px] leading-[1.45] text-[#5C544A]">{message}</p>}
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button
+                  onClick={handleClearNotifications}
+                  className="h-[42px] rounded-[12px] bg-[#F2DED7] text-[#A34B35] text-[13px] font-semibold"
+                >
+                  지우기
+                </button>
+                <button
+                  onClick={() => setNotificationsOpen(false)}
+                  className="h-[42px] rounded-[12px] bg-[#00643E] text-white text-[13px] font-semibold"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -122,20 +122,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: sentError?.message || '편지 전송에 실패했어요.' }, { status: 500 })
   }
 
-  // AI 답장 여부 결정
-  // - 매칭 전: 항상 답장 (AI와 자유롭게 주고받음)
-  // - 매칭 후: 그 매칭에서 내가 보낸 '첫 번째' 편지에만 1회 답장
-  let shouldAiReply = true
-  if (partnerId) {
-    const { count } = await admin
-      .from('letters')
-      .select('id', { count: 'exact', head: true })
-      .eq('match_id', match!.id)
-      .eq('sender_id', user.id)
-      .eq('sender_type', 'user')
-      .neq('id', sentLetter.id)
-    shouldAiReply = (count ?? 0) === 0
-  }
+  // 사용자가 편지를 보내면 매칭 여부와 관계없이 항상 AI 답장을 예약한다.
+  const shouldAiReply = true
 
   let aiArrivalAt: string | null = null
   if (shouldAiReply) {

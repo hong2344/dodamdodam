@@ -118,9 +118,22 @@ export async function POST(request: NextRequest) {
 
     const rows = (subscriptions || []) as PushSubscriptionRow[];
     const message = PUSH_MESSAGES[body.type];
+    const title = body.title || message.title;
+    const bodyText = body.body ?? message.body ?? '';
+    await supabase.from('notifications').insert({
+      user_id: body.userId,
+      type: body.type,
+      payload: {
+        title,
+        message: bodyText,
+        url: body.url || '/',
+        data: body.data || {},
+      },
+    });
+
     const payload = JSON.stringify({
-      title: body.title || message.title,
-      body: body.body ?? message.body ?? '',
+      title,
+      body: bodyText,
       url: body.url || '/',
       data: {
         type: body.type,
