@@ -30,7 +30,41 @@ async function handle(request: Request) {
     return NextResponse.json({ ok: false, error: notifyError.message }, { status: 500 })
   }
 
-  return NextResponse.json({ ok: true, week_start: weekStart, matched: data, notified })
+  let pushed = 0
+  const pushSecret = process.env.PUSH_API_SECRET
+  if (pushSecret) {
+    const { data: matches, error: matchesError } = await supabase
+      .from('matches')
+      .select('user_a_id, user_b_id')
+      .eq('status', 'active')
+      .eq('week_start', weekStart)
+
+    if (matchesError) {
+      return NextResponse.json({ ok: false, error: matchesError.message }, { status: 500 })
+    }
+
+    const userIds = [
+      ...new Set((matches ?? []).flatMap((match) => [match.user_a_id, match.user_b_id])),
+    ].filter(Boolean) as string[]
+
+    if (userIds.length > 0) {
+      const origin = new URL(request.url).origin
+      const results = await Promise.allSettled(
+        userIds.map((userId) =>
+          fetch(`${origin}/api/push/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pushSecret}` },
+            body: JSON.stringify({ userId, type: 'matching_completed', url: '/home' }),
+          }).then((response) => {
+            if (!response.ok) throw new Error(String(response.status))
+          }),
+        ),
+      )
+      pushed = results.filter((result) => result.status === 'fulfilled').length
+    }
+  }
+
+  return NextResponse.json({ ok: true, week_start: weekStart, matched: data, notified, pushed })
 }
 
 export async function GET(request: Request) {
