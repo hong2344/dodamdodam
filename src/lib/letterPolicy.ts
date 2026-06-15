@@ -1,4 +1,4 @@
-export type LetterPolicyViolation = 'profanity' | 'phone' | 'openKakao' | 'contact'
+export type LetterPolicyViolation = 'profanity' | 'phone' | 'email' | 'name' | 'school' | 'openKakao' | 'contact'
 
 // 욕설/비속어·인신공격을 차단한다.
 // 단, 고민/감정 편지에 흔한 표현은 오탐 방지를 위해 일부러 제외한다:
@@ -39,15 +39,51 @@ const PROFANITY_PATTERNS = [
 const PHONE_PATTERNS = [
   /(?:\+?82[-.\s]?)?0?1[016789][-\s.]?\d{3,4}[-\s.]?\d{4}/,
   /\b\d{2,3}[-.\s]\d{3,4}[-.\s]\d{4}\b/,
+  /(?:\+?82[-.\s]?)?0\s*1\s*[016789](?:[-.\s]?\d){7,8}/,
+]
+
+const EMAIL_PATTERNS = [
+  /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i,
+  /[a-z0-9._%+-]+\s*(?:골뱅이|앳|at)\s*[a-z0-9.-]+\s*(?:닷|점|dot)\s*[a-z]{2,}/i,
+  /\b[a-z0-9._%+-]+\s*(?:naver|gmail|googlemail|daum|hanmail|kakao|icloud|outlook|hotmail)\s*(?:com|net|co\.kr)?\b/i,
+  /(?:네이버|지메일|구글메일|다음|한메일|카카오|아이클라우드|아웃룩|핫메일)\s*(?:메일|email|e-mail)?/i,
+]
+
+const NAME_PATTERNS = [
+  /(?:내\s*)?(?:이름|실명|본명|성명)\s*(?:은|는|이|가|:|=)/i,
+  /(?:나는|저는|제가|난|전)\s*[가-힣]{2,4}\s*(?:이야|야|입니다|이에요|예요|라고|이라고)/,
+  /[가-힣]{2,4}\s*(?:이라고|라고)\s*(?:불러|해|합니다|부르면)/,
+  /(?:my\s*)?name\s*(?:is|:|=)/i,
+]
+
+const SCHOOL_PATTERNS = [
+  /학교/,
+  /초등\s*학교/,
+  /중\s*학교/,
+  /고등\s*학교/,
+  /대학교/,
+  /대학/,
+  /캠퍼스/,
+  /[가-힣a-z0-9]+\s*(?:초|중|고|대)\s*(?:다녀|다니|나왔|졸업|학생|재학)/i,
+  /[가-힣a-z0-9]+\s*(?:초등학교|중학교|고등학교|대학교|대학)\s*(?:다녀|다니|나왔|졸업|학생|재학)?/i,
+  /\b(?:school|university|college|campus)\b/i,
 ]
 
 const OPEN_KAKAO_PATTERNS = [
   /open\.kakao\.com/i,
+  /open\s*kakao/i,
   /오픈\s*카\s*톡/i,
+  /오픈\s*톡/i,
   /오픈\s*카카오/i,
   /오픈\s*채팅/i,
+  /오픈\s*챗/i,
+  /옾\s*챗/i,
+  /오\s*카/i,
   /카카오\s*톡/i,
   /카\s*톡/i,
+  /카카오\s*(?:아이디|id)/i,
+  /카\s*톡\s*(?:아이디|id)/i,
+  /카톡방/i,
   /kakao\s*talk/i,
   /\bkakaotalk\b/i,
 ]
@@ -72,13 +108,20 @@ const CONTACT_PATTERNS = [
   /트\s*위\s*터/i,
   /twitter/i,
   /facebook/i,
-  // 이메일 주소
-  /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i,
 ]
+
+function hasPhoneNumber(text: string) {
+  const digitsOnly = text.replace(/\D/g, '')
+  return PHONE_PATTERNS.some((pattern) => pattern.test(text)) ||
+    /(?:82)?01[016789]\d{7,8}/.test(digitsOnly)
+}
 
 export function getLetterPolicyViolation(text: string): LetterPolicyViolation | null {
   if (PROFANITY_PATTERNS.some((pattern) => pattern.test(text))) return 'profanity'
-  if (PHONE_PATTERNS.some((pattern) => pattern.test(text))) return 'phone'
+  if (hasPhoneNumber(text)) return 'phone'
+  if (EMAIL_PATTERNS.some((pattern) => pattern.test(text))) return 'email'
+  if (NAME_PATTERNS.some((pattern) => pattern.test(text))) return 'name'
+  if (SCHOOL_PATTERNS.some((pattern) => pattern.test(text))) return 'school'
   if (OPEN_KAKAO_PATTERNS.some((pattern) => pattern.test(text))) return 'openKakao'
   if (CONTACT_PATTERNS.some((pattern) => pattern.test(text))) return 'contact'
   return null
@@ -87,12 +130,18 @@ export function getLetterPolicyViolation(text: string): LetterPolicyViolation | 
 export function getLetterPolicyMessage(violation: LetterPolicyViolation) {
   switch (violation) {
     case 'profanity':
-      return '욕설은 편지에 사용할 수 없어요.'
+      return '욕설은 편지에 쓸 수 없습니다.'
     case 'phone':
-      return '전화번호 교환은 편지에서 할 수 없어요.'
+      return '전화번호는 편지에 쓸 수 없습니다.'
+    case 'email':
+      return '이메일은 편지에 쓸 수 없습니다.'
+    case 'name':
+      return '이름은 편지에 쓸 수 없습니다.'
+    case 'school':
+      return '학교는 편지에 쓸 수 없습니다.'
     case 'openKakao':
-      return '오픈카카오채팅 교환은 편지에서 할 수 없어요.'
+      return '오픈 카카오는 편지에 쓸 수 없습니다.'
     case 'contact':
-      return '다른 SNS·메신저·이메일 등 연락처 교환은 편지에서 할 수 없어요.'
+      return '다른 SNS·메신저 연락처는 편지에 쓸 수 없습니다.'
   }
 }

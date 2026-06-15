@@ -53,6 +53,7 @@ function ComposeForm() {
   // 금지어 검사는 아래 policyViolation으로 실시간 안내 + 전송 차단으로 처리한다.
   const handleTextChange = (nextText: string) => {
     setText(nextText.slice(0, 1000))
+    setError(null)
   }
 
   useEffect(() => {
@@ -260,7 +261,7 @@ function ComposeForm() {
         </div>
 
         {policyViolation && !error && (
-          <p className="mt-2 text-[12px] text-[#C2410C]">{getLetterPolicyMessage(policyViolation)}</p>
+          <p className="mt-2 text-[12px] font-semibold text-red-600">{getLetterPolicyMessage(policyViolation)}</p>
         )}
         {error && <p className="mt-2 text-[12px] text-red-600">{error}</p>}
 

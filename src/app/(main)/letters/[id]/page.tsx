@@ -36,6 +36,8 @@ export default function ReadLetterPage() {
   const [data, setData] = useState<LetterData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [actionMessage, setActionMessage] = useState<string | null>(null)
+  const [actionLoading, setActionLoading] = useState<'report' | 'block' | null>(null)
 
   useEffect(() => {
     if (!letterId) return
@@ -92,6 +94,44 @@ export default function ReadLetterPage() {
       setLoading(false)
     })()
   }, [letterId])
+
+  const handleReport = async () => {
+    if (!letterId || actionLoading) return
+    if (!window.confirm('이 편지를 신고할까요? 운영팀이 편지 내용을 확인합니다.')) return
+
+    setActionLoading('report')
+    setActionMessage(null)
+    const response = await fetch(`/api/letters/${letterId}/report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: '부적절한 편지 내용' }),
+    })
+    const body = await response.json().catch(() => null)
+    setActionLoading(null)
+
+    if (!response.ok) {
+      setActionMessage(body?.error || '신고에 실패했어요.')
+      return
+    }
+    setActionMessage('신고가 접수됐어요. 운영팀이 확인할게요.')
+  }
+
+  const handleBlock = async () => {
+    if (!letterId || actionLoading) return
+    if (!window.confirm('이 상대를 차단할까요? 차단하면 이 상대의 편지를 편지함에서 숨깁니다.')) return
+
+    setActionLoading('block')
+    setActionMessage(null)
+    const response = await fetch(`/api/letters/${letterId}/block`, { method: 'POST' })
+    const body = await response.json().catch(() => null)
+    setActionLoading(null)
+
+    if (!response.ok) {
+      setActionMessage(body?.error || '차단에 실패했어요.')
+      return
+    }
+    router.push('/mailbox')
+  }
 
   if (loading) {
     return (
@@ -156,6 +196,32 @@ export default function ReadLetterPage() {
           <div className="mt-4">
             {/* 사람 편지엔 답장 연결(스레드 색 유지). AI 편지엔 일반 작성. */}
             <Btn onClick={() => router.push(data.senderAvatar === 'ai' ? '/compose' : `/compose?reply=${letterId}`)}>답장쓰기 →</Btn>
+          </div>
+        )}
+
+        {data.isIncoming && data.senderAvatar !== 'ai' && (
+          <div className="mt-3">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleReport}
+                disabled={actionLoading !== null}
+                className="h-10 rounded-[12px] border border-[#FDBA74] bg-[#FFF7ED] text-[12.5px] font-semibold text-[#C2410C] disabled:opacity-60"
+              >
+                {actionLoading === 'report' ? '신고 중...' : '신고'}
+              </button>
+              <button
+                type="button"
+                onClick={handleBlock}
+                disabled={actionLoading !== null}
+                className="h-10 rounded-[12px] border border-[#FCA5A5] bg-[#FEF2F2] text-[12.5px] font-semibold text-[#B91C1C] disabled:opacity-60"
+              >
+                {actionLoading === 'block' ? '차단 중...' : '차단'}
+              </button>
+            </div>
+            {actionMessage && (
+              <p className="mt-2 text-center text-[12px] text-red-600">{actionMessage}</p>
+            )}
           </div>
         )}
 

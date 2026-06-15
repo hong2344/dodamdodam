@@ -53,6 +53,12 @@ export default function MailboxPage() {
         .lte('sent_at', new Date().toISOString())
         .order('sent_at', { ascending: false })
 
+      const { data: blocks } = await supabase
+        .from('blocks')
+        .select('blocked_id')
+        .eq('blocker_id', user.id)
+      const blockedIds = new Set((blocks ?? []).map((block) => block.blocked_id))
+
       // 보낸 편지
       const { data: sentLetters } = await supabase
         .from('letters')
@@ -69,7 +75,7 @@ export default function MailboxPage() {
         if (l.receiver_id) partnerIds.add(l.receiver_id)
       })
 
-      let profilesMap: Record<string, { avatar_type: number | null; nickname: string | null }> = {}
+      const profilesMap: Record<string, { avatar_type: number | null; nickname: string | null }> = {}
       if (partnerIds.size > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
@@ -110,7 +116,9 @@ export default function MailboxPage() {
         }
       }
 
-      setReceived((receivedLetters ?? []).map(l => mapItem(l.sender_id, l, true)))
+      setReceived((receivedLetters ?? [])
+        .filter(l => !l.sender_id || !blockedIds.has(l.sender_id))
+        .map(l => mapItem(l.sender_id, l, true)))
       setSent((sentLetters ?? []).map(l => mapItem(l.receiver_id, l, false)))
       setLoading(false)
     })()
