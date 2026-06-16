@@ -27,9 +27,10 @@ export default function SignupPage() {
       return
     }
     // 카카오 인증 도입 전까지는 이메일 가입에서 나이를 직접 받는다 (매칭 기준에 필요)
+    // 가입 대상은 중고등학생(연 나이 14~19세: 중1~고3)으로 제한한다.
     const ageNum = Number(age)
     if (!Number.isInteger(ageNum) || ageNum < 14 || ageNum > 19) {
-      setError('나이는 14~19세만 입력할 수 있어요.')
+      setError('중고등학생(14~19세)만 가입할 수 있어요.')
       return
     }
     setLoading(true)
@@ -106,7 +107,7 @@ export default function SignupPage() {
         <div className="mt-6 flex flex-col gap-[10px]">
           <Field placeholder="이메일" type="email" value={email} onChange={e => setEmail(e.target.value)} />
           <Field placeholder="비밀번호 (6자 이상)" type="password" value={pw} onChange={e => setPw(e.target.value)} />
-          <Field placeholder="나이 (만 14~19세)" type="number" value={age} onChange={e => setAge(e.target.value)} />
+          <Field placeholder="나이 (중고등학생, 14~19세)" type="number" value={age} onChange={e => setAge(e.target.value)} />
           {error && (
             <p className="text-[12px] text-red-600 mt-1">{error}</p>
           )}
