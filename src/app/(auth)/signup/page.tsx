@@ -1,36 +1,51 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import Btn from '@/components/Btn'
 import Field from '@/components/Field'
+import {
+  AGE_RESTRICTION_MESSAGE,
+  calculateInternationalAge,
+  getEligibleSignupAge,
+} from '@/lib/ageVerification'
 import { getSiteUrl } from '@/lib/auth/url'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
-  const [age, setAge] = useState('')
+  const [birthDate, setBirthDate] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const showSignupAgeError = () => {
+    setError(AGE_RESTRICTION_MESSAGE)
+    window.alert(AGE_RESTRICTION_MESSAGE)
+  }
+
+  useEffect(() => {
+    if (searchParams.get('age_error') === '1') {
+      showSignupAgeError()
+    }
+  }, [searchParams])
+
   const handleSignup = async () => {
     setError(null)
-    if (!email || !pw || !age) {
-      setError('이메일, 비밀번호, 나이를 모두 입력해주세요.')
+    if (!email || !pw || !birthDate) {
+      setError('이메일, 비밀번호, 생년월일을 모두 입력해주세요.')
       return
     }
     if (pw.length < 6) {
       setError('비밀번호는 6자 이상이어야 해요.')
       return
     }
-    // 카카오 인증 도입 전까지는 이메일 가입에서 나이를 직접 받는다 (매칭 기준에 필요)
-    // 가입 대상은 중고등학생(연 나이 14~19세: 중1~고3)으로 제한한다.
-    const ageNum = Number(age)
-    if (!Number.isInteger(ageNum) || ageNum < 14 || ageNum > 19) {
-      setError('중고등학생(14~19세)만 가입할 수 있어요.')
+    const age = getEligibleSignupAge(birthDate)
+    if (age === null) {
+      showSignupAgeError()
       return
     }
     setLoading(true)
@@ -54,7 +69,8 @@ export default function SignupPage() {
     const { error: profileError } = await supabase.from('profiles').insert({
       id: userId,
       nickname_set: false,
-      age: ageNum,
+      age,
+      birth_date: birthDate,
       created_at: new Date().toISOString(),
     })
     setLoading(false)
@@ -107,7 +123,10 @@ export default function SignupPage() {
         <div className="mt-6 flex flex-col gap-[10px]">
           <Field placeholder="이메일" type="email" value={email} onChange={e => setEmail(e.target.value)} />
           <Field placeholder="비밀번호 (6자 이상)" type="password" value={pw} onChange={e => setPw(e.target.value)} />
-          <Field placeholder="나이 (중고등학생, 14~19세)" type="number" value={age} onChange={e => setAge(e.target.value)} />
+          <Field placeholder="생년월일" type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
+          {birthDate && calculateInternationalAge(birthDate) !== null && (
+            <p className="text-[12px] text-[#5C544A] mt-1">만 {calculateInternationalAge(birthDate)}세</p>
+          )}
           {error && (
             <p className="text-[12px] text-red-600 mt-1">{error}</p>
           )}
