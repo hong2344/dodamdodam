@@ -114,7 +114,7 @@ export default function NicknamePage() {
             className="p-3 rounded-[10px] text-[12px] leading-relaxed text-[#5C544A]"
             style={{ background: 'rgba(0,100,62,0.06)', border: '1px solid rgba(0,100,62,0.15)' }}
           >
-            💡 도담도담은 <strong>익명</strong> 서비스예요. 실명·학교명·반 정보처럼 신원을 알 수 있는 이름은 사용하지 마세요.
+            💡 고민 한 조각은 <strong>익명</strong> 서비스예요. 실명·학교명·반 정보처럼 신원을 알 수 있는 이름은 사용하지 마세요.
           </div>
 
           {error && <p className="text-[12px] text-red-600">{error}</p>}

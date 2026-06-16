@@ -724,26 +724,28 @@ export default function HomePage() {
         {/* 하단 노란 띠 (5px) */}
         <div className="absolute left-0 right-0 bottom-0 z-10" style={{ height: 20, background: '#F5EBC8' }} />
         <div className="pt-3 px-6 flex items-center justify-between" style={{ transform: 'translateY(10px)' }}>
-          <div className="flex items-center gap-[10px]">
+          <div className="flex items-center gap-[16px]">
             <button
               onClick={() => {
                 setNotificationsOpen(true)
                 void loadNotifications()
               }}
               aria-label="알림 목록 열기"
-              className="relative font-mono text-[11px] tracking-[0.08em] opacity-85 hover:opacity-100 transition-opacity inline-flex items-center gap-[5px]"
+              className="font-mono text-[11px] tracking-[0.08em] opacity-85 hover:opacity-100 transition-opacity inline-flex items-center gap-[5px]"
               style={{ color: textColor, textShadow, background: 'transparent', border: 'none', cursor: 'pointer' }}
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-              </svg>
+              <span className="relative inline-flex">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                  <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                </svg>
+                {notifications.length > 0 && (
+                  <span className="absolute -top-[8px] -left-[10px] min-w-[15px] h-[15px] px-[3px] rounded-full bg-[#D87858] text-white font-mono text-[8px] font-bold flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.25)]">
+                    {notifications.length > 99 ? '99+' : notifications.length}
+                  </span>
+                )}
+              </span>
               알림
-              {notifications.length > 0 && (
-                <span className="absolute -top-[7px] -right-[10px] min-w-[18px] h-[18px] px-[4px] rounded-full bg-[#D87858] text-white font-mono text-[9px] font-bold flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.25)]">
-                  {notifications.length > 99 ? '99+' : notifications.length}
-                </span>
-              )}
             </button>
             {push.isSupported && (
               <button
@@ -757,26 +759,15 @@ export default function HomePage() {
               </button>
             )}
           </div>
-          <div className="flex items-center gap-[10px]">
-            <button
-              onClick={handleLogout}
-              disabled={loggingOut || deleting}
-              aria-label="로그아웃"
-              className="font-mono text-[11px] tracking-[0.08em] opacity-85 hover:opacity-100 transition-opacity disabled:opacity-40"
-              style={{ color: textColor, textShadow, background: 'transparent', border: 'none', cursor: 'pointer' }}
-            >
-              {loggingOut ? '로그아웃 중…' : '로그아웃'}
-            </button>
-            <button
-              onClick={handleDeleteAccount}
-              disabled={deleting || loggingOut}
-              aria-label="회원 탈퇴"
-              className="font-mono text-[11px] tracking-[0.08em] opacity-60 hover:opacity-100 transition-opacity disabled:opacity-40"
-              style={{ color: textColor, textShadow, background: 'transparent', border: 'none', cursor: 'pointer' }}
-            >
-              {deleting ? '탈퇴 중…' : '탈퇴'}
-            </button>
-          </div>
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut || deleting}
+            aria-label="로그아웃"
+            className="font-mono text-[11px] tracking-[0.08em] opacity-85 hover:opacity-100 transition-opacity disabled:opacity-40"
+            style={{ color: textColor, textShadow, background: 'transparent', border: 'none', cursor: 'pointer' }}
+          >
+            {loggingOut ? '로그아웃 중…' : '로그아웃'}
+          </button>
         </div>
         {push.error && (
           <p className="px-6 font-mono text-[10px] text-red-500 -mt-1" style={{ transform: 'translateY(10px)' }}>{push.error}</p>
@@ -905,6 +896,19 @@ export default function HomePage() {
             <ProgressBar {...progress} />
           </div>
         )}
+
+        {/* 하단 중앙 회원 탈퇴 (노란 띠 위) */}
+        <div className="absolute left-0 right-0 z-20 flex justify-center" style={{ bottom: 1 }}>
+          <button
+            onClick={handleDeleteAccount}
+            disabled={deleting || loggingOut}
+            aria-label="회원 탈퇴"
+            className="font-mono text-[10px] tracking-[0.08em] text-[#8A7A4A] hover:text-[#6B5E36] underline underline-offset-2 transition-colors disabled:opacity-40"
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+          >
+            {deleting ? '탈퇴 중…' : '회원 탈퇴'}
+          </button>
+        </div>
 
         <div className="px-[20px] flex justify-end items-center absolute left-0 right-0" style={{ bottom: 20 }}>
           <div

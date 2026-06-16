@@ -49,6 +49,10 @@ function SentContent() {
         const { data: p } = await supabase.from('profiles').select('avatar_type, nickname').eq('id', pid).maybeSingle()
         if (p?.avatar_type) setPartnerAvatar(AVATAR_MAP[p.avatar_type] ?? 'bear')
         if (p?.nickname) setPartnerNickname(p.nickname)
+      } else {
+        // 활성 매칭이 없으면 AI 마음친구와의 대화 (매칭 전)
+        setPartnerAvatar('ai')
+        setPartnerNickname('AI 마음친구')
       }
     })()
   }, [])
