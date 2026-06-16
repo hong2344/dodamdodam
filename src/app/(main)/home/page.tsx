@@ -1018,7 +1018,7 @@ export default function HomePage() {
                   onClick={handleClearNotifications}
                   className="h-[42px] rounded-[12px] bg-[#F2DED7] text-[#A34B35] text-[13px] font-semibold"
                 >
-                  지우기
+                  전체 지우기
                 </button>
                 <button
                   onClick={() => setNotificationsOpen(false)}
