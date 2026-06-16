@@ -11,6 +11,7 @@ type PushEventType =
   | 'letter_arrived'
   | 'matching_open'
   | 'letter_unread_reminder'
+  | 'letter_reply_reminder'
   | 'matching_no_letter';
 
 type SendPushRequest = {
@@ -51,6 +52,10 @@ const PUSH_MESSAGES: Record<PushEventType, { title: string; body?: string }> = {
   letter_unread_reminder: {
     title: '아직 읽지 않은 편지가 있어요',
     body: '편지집에서 따뜻한 마음을 확인해보세요.',
+  },
+  letter_reply_reminder: {
+    title: '답장을 기다리는 편지가 있어요',
+    body: '상대방 편지에 24시간 동안 답장하지 않았어요.',
   },
   matching_no_letter: {
     title: '마음친구가 기다리고 있어요',

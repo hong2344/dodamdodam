@@ -4,13 +4,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-// 매칭 상대에게서 24시간 동안 도착한 새 편지가 없을 때 보내는 리마인더.
-// 사용자별 기준 시각:
-// - 상대가 보낸 도착 완료 편지가 있으면 그 편지의 sent_at
-// - 아직 받은 편지가 없으면 매칭 생성 시각
+// 상대방 편지가 도착한 뒤 24시간 동안 답장하지 않았을 때 보내는 리마인더.
 //
-// 중복 방지: 기준 시각을 포함한 reminderKey를 notifications.payload.data에 저장한다.
-// 같은 기준 시각으로는 한 번만 알리고, 이후 상대에게서 새 편지가 도착하면 24시간 뒤 새 key로 다시 알릴 수 있다.
+// 중복 방지: 편지 id를 포함한 reminderKey를 notifications.payload.data에 저장한다.
+// 같은 받은 편지로는 한 번만 알리고, 새 편지가 도착하면 새 key로 다시 알릴 수 있다.
 const REMIND_AFTER_HOURS = 24
 
 type MatchRow = {
@@ -21,10 +18,12 @@ type MatchRow = {
 }
 
 type LetterRow = {
+  id: string
   match_id: string | null
   sender_id: string | null
   receiver_id: string | null
   sent_at: string | null
+  original_letter_id?: string | null
 }
 
 type NotificationRow = {
@@ -40,12 +39,8 @@ function toDbTs(ms: number) {
   return new Date(ms).toISOString().replace('Z', '')
 }
 
-function getLatestIncomingKey(matchId: string, userId: string) {
-  return `${matchId}:${userId}`
-}
-
-function getReminderKey(matchId: string, userId: string, baseTime: string) {
-  return `matching-no-letter-24h:${matchId}:${userId}:${baseTime}`
+function getReminderKey(letterId: string) {
+  return `letter-unreplied-24h:${letterId}`
 }
 
 function parseDbTime(value: string) {
@@ -64,7 +59,7 @@ async function handle(request: Request) {
 
   const admin = createAdminClient()
   const now = Date.now()
-  const nowTs = toDbTs(now)
+  const replyDeadlineTs = toDbTs(now - REMIND_AFTER_HOURS * 60 * 60 * 1000)
 
   const { data: matches, error } = await admin
     .from('matches')
@@ -83,56 +78,70 @@ async function handle(request: Request) {
   const matchIds = matchList.map((m) => m.id)
   const { data: incomingLetters, error: lettersError } = await admin
     .from('letters')
-    .select('match_id, sender_id, receiver_id, sent_at')
+    .select('id, match_id, sender_id, receiver_id, sent_at')
     .in('match_id', matchIds)
     .eq('sender_type', 'user')
     .eq('receiver_type', 'user')
     .not('receiver_id', 'is', null)
-    .lte('sent_at', nowTs)
-    .order('sent_at', { ascending: false })
+    .lte('sent_at', replyDeadlineTs)
+    .order('sent_at', { ascending: true })
 
   if (lettersError) {
     return NextResponse.json({ ok: false, error: lettersError.message }, { status: 500 })
   }
 
-  const latestIncoming = new Map<string, LetterRow>()
-  for (const letter of (incomingLetters ?? []) as LetterRow[]) {
-    if (!letter.match_id || !letter.receiver_id || !letter.sender_id || !letter.sent_at) continue
-    const key = getLatestIncomingKey(letter.match_id, letter.receiver_id)
-    if (!latestIncoming.has(key)) {
-      latestIncoming.set(key, letter)
-    }
-  }
+  const replyTargets = ((incomingLetters ?? []) as LetterRow[])
+    .filter((letter) => letter.id && letter.match_id && letter.receiver_id && letter.sender_id && letter.sent_at)
 
   const candidates: {
     userId: string
     partnerId: string
     matchId: string
+    letterId: string
     reminderKey: string
-    latestIncomingAt: string | null
+    incomingAt: string
   }[] = []
 
-  for (const m of matchList) {
-    if (!m.user_a_id || !m.user_b_id) continue
+  if (replyTargets.length > 0) {
+    const { data: outgoingLetters, error: outgoingError } = await admin
+      .from('letters')
+      .select('id, match_id, sender_id, receiver_id, sent_at, original_letter_id')
+      .in('match_id', matchIds)
+      .eq('sender_type', 'user')
+      .eq('receiver_type', 'user')
+      .not('sender_id', 'is', null)
+      .not('receiver_id', 'is', null)
 
-    for (const [userId, partnerId] of [
-      [m.user_a_id, m.user_b_id],
-      [m.user_b_id, m.user_a_id],
-    ] as const) {
-      const latest = latestIncoming.get(getLatestIncomingKey(m.id, userId))
-      const baseTime = latest?.sent_at ?? m.created_at
-      if (!baseTime) continue
+    if (outgoingError) {
+      return NextResponse.json({ ok: false, error: outgoingError.message }, { status: 500 })
+    }
 
-      const baseMs = parseDbTime(baseTime)
-      if (!Number.isFinite(baseMs)) continue
-      if (now - baseMs < REMIND_AFTER_HOURS * 60 * 60 * 1000) continue
+    const outgoing = ((outgoingLetters ?? []) as LetterRow[])
+      .filter((letter) => letter.match_id && letter.sender_id && letter.receiver_id && letter.sent_at)
+
+    for (const letter of replyTargets) {
+      const incomingMs = parseDbTime(letter.sent_at!)
+      if (!Number.isFinite(incomingMs)) continue
+
+      const hasReply = outgoing.some((sent) => {
+        if (sent.match_id !== letter.match_id) return false
+        if (sent.sender_id !== letter.receiver_id || sent.receiver_id !== letter.sender_id) return false
+        if (sent.original_letter_id === letter.id) return true
+        if (!sent.sent_at) return false
+
+        const sentMs = parseDbTime(sent.sent_at)
+        return Number.isFinite(sentMs) && sentMs > incomingMs
+      })
+
+      if (hasReply) continue
 
       candidates.push({
-        userId,
-        partnerId,
-        matchId: m.id,
-        reminderKey: getReminderKey(m.id, userId, baseTime),
-        latestIncomingAt: latest?.sent_at ?? null,
+        userId: letter.receiver_id!,
+        partnerId: letter.sender_id!,
+        matchId: letter.match_id!,
+        letterId: letter.id,
+        reminderKey: getReminderKey(letter.id),
+        incomingAt: letter.sent_at!,
       })
     }
   }
@@ -145,7 +154,7 @@ async function handle(request: Request) {
   const { data: previousNotifications, error: notificationError } = await admin
     .from('notifications')
     .select('payload')
-    .eq('type', 'matching_no_letter')
+    .eq('type', 'letter_reply_reminder')
     .in('user_id', targetIds)
 
   if (notificationError) {
@@ -170,15 +179,16 @@ async function handle(request: Request) {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pushSecret}` },
           body: JSON.stringify({
             userId: target.userId,
-            type: 'matching_no_letter',
-            title: '새 편지를 기다리고 있어요',
-            body: '매칭된 친구에게서 24시간 동안 새 편지가 오지 않았어요.',
-            url: '/compose',
+            type: 'letter_reply_reminder',
+            title: '답장을 기다리는 편지가 있어요',
+            body: '상대방 편지에 24시간 동안 답장하지 않았어요.',
+            url: `/compose?reply=${target.letterId}`,
             data: {
+              letterId: target.letterId,
               matchId: target.matchId,
               partnerId: target.partnerId,
               reminderKey: target.reminderKey,
-              latestIncomingAt: target.latestIncomingAt,
+              incomingAt: target.incomingAt,
             },
           }),
         }).then((r) => {

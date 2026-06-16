@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import Avatar from '@/components/Avatar'
 import HouseIcon from '@/components/HouseIcon'
@@ -242,6 +242,12 @@ interface AppNotification {
   created_at: string | null
 }
 
+interface ToastNotification {
+  id: string
+  title: string
+  message: string
+}
+
 const NOTIFICATION_TITLES: Record<string, string> = {
   new_match: '매칭이 완료되었습니다',
   matching_completed: '매칭이 완료되었습니다',
@@ -250,6 +256,7 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   letter_arrived: '편지가 도착했습니다',
   matching_open: '이번 주 매칭 신청이 시작됐어요',
   letter_unread_reminder: '아직 읽지 않은 편지가 있어요',
+  letter_reply_reminder: '답장을 기다리는 편지가 있어요',
   matching_no_letter: '마음친구가 기다리고 있어요',
 }
 
@@ -272,13 +279,12 @@ export default function HomePage() {
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [notificationsLoading, setNotificationsLoading] = useState(false)
+  const [toastQueue, setToastQueue] = useState<ToastNotification[]>([])
+  const showedInitialNotifications = useRef(false)
   // ?preview=window 로 접속하면 신청창 배너를 시간과 무관하게 표시(미리보기용, 서버 로직엔 영향 없음)
-  const [previewWindow, setPreviewWindow] = useState(false)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setPreviewWindow(new URLSearchParams(window.location.search).get('preview') === 'window')
-    }
-  }, [])
+  const [previewWindow] = useState(() =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === 'window',
+  )
 
   const push = usePushNotification({
     getAccessToken: async () => {
@@ -296,12 +302,30 @@ export default function HomePage() {
     router.replace('/login')
   }
 
-  async function loadNotifications() {
+  function getNotificationText(item: AppNotification) {
+    return {
+      title: item.payload?.title ?? NOTIFICATION_TITLES[item.type] ?? '알림',
+      message: item.payload?.message ?? item.payload?.body ?? '',
+    }
+  }
+
+  async function loadNotifications(options?: { showToasts?: boolean }) {
     setNotificationsLoading(true)
     try {
       const response = await fetch('/api/notifications', { cache: 'no-store' })
       const body = await response.json().catch(() => null) as { notifications?: AppNotification[] } | null
-      setNotifications(body?.notifications ?? [])
+      const nextNotifications = body?.notifications ?? []
+      setNotifications(nextNotifications)
+
+      if (options?.showToasts && nextNotifications.length > 0) {
+        setToastQueue((prev) => [
+          ...prev,
+          ...nextNotifications.map((notification) => ({
+            id: notification.id,
+            ...getNotificationText(notification),
+          })),
+        ])
+      }
     } finally {
       setNotificationsLoading(false)
     }
@@ -318,6 +342,15 @@ export default function HomePage() {
     return () => window.clearInterval(t)
   }, [])
 
+  useEffect(() => {
+    if (toastQueue.length === 0) return
+
+    const t = window.setTimeout(() => {
+      setToastQueue((prev) => prev.slice(1))
+    }, 2_000)
+    return () => window.clearTimeout(t)
+  }, [toastQueue])
+
   // DB에서 데이터 로드
   useEffect(() => {
     (async () => {
@@ -329,7 +362,12 @@ export default function HomePage() {
         setLoading(false)
         return
       }
-      void loadNotifications()
+      if (!showedInitialNotifications.current) {
+        showedInitialNotifications.current = true
+        void loadNotifications({ showToasts: true })
+      } else {
+        void loadNotifications()
+      }
 
       // 2) 내 프로필
       const { data: profile } = await supabase
@@ -632,9 +670,20 @@ export default function HomePage() {
   const textColor = isDark ? '#FFFFFF' : '#1A1816'
   // 그라데이션 배경 위에서 글씨가 묻히지 않도록 대비 보강
   const textShadow = isDark ? '0 1px 3px rgba(0,0,0,0.5)' : '0 1px 2px rgba(255,255,255,0.55)'
+  const activeToast = toastQueue[0] ?? null
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: '#F5F0E6' }}>
+      {activeToast && (
+        <div className="fixed left-0 right-0 top-4 z-[70] flex justify-center px-4 pointer-events-none">
+          <div className="w-full max-w-[340px] rounded-[12px] bg-[#1A1816] px-4 py-3 text-white shadow-[0_12px_35px_rgba(0,0,0,0.22)]">
+            <p className="text-[13px] font-semibold leading-[1.35]">{activeToast.title}</p>
+            {activeToast.message && (
+              <p className="mt-1 text-[12px] leading-[1.45] text-white/78">{activeToast.message}</p>
+            )}
+          </div>
+        </div>
+      )}
       <div
         className="w-full max-w-[375px] flex flex-col relative"
         style={{
@@ -858,8 +907,7 @@ export default function HomePage() {
                   <p className="py-10 text-center text-[13px] text-[#5C544A]">아직 알림이 없어요.</p>
                 ) : (
                   notifications.map((item) => {
-                    const title = item.payload?.title ?? NOTIFICATION_TITLES[item.type] ?? '알림'
-                    const message = item.payload?.message ?? item.payload?.body ?? ''
+                    const { title, message } = getNotificationText(item)
                     return (
                       <div key={item.id} className="rounded-[12px] bg-white/75 border border-[#E0D9C7] px-3 py-3">
                         <div className="flex items-start justify-between gap-2">
