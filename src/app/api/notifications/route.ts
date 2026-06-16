@@ -26,7 +26,7 @@ export async function GET() {
   return NextResponse.json({ notifications: data ?? [] })
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -34,11 +34,20 @@ export async function DELETE() {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
+  const id = new URL(request.url).searchParams.get('id')
+
   const admin = createAdminClient()
-  const { error } = await admin
+  let query = admin
     .from('notifications')
     .delete()
     .eq('user_id', user.id)
+
+  // id가 있으면 해당 알림 하나만, 없으면 전체 삭제
+  if (id) {
+    query = query.eq('id', id)
+  }
+
+  const { error } = await query
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

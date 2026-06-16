@@ -258,6 +258,27 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   letter_unread_reminder: '아직 읽지 않은 편지가 있어요',
   letter_reply_reminder: '답장을 기다리는 편지가 있어요',
   matching_no_letter: '마음친구가 기다리고 있어요',
+  category_reminder: '새로운 친구를 만날 시간이에요',
+}
+
+// 알림 클릭 시 이동할 경로. payload.url을 우선 쓰되, 없으면 타입별 기본 경로로.
+const NOTIFICATION_URLS: Record<string, string> = {
+  new_match: '/home',
+  matching_completed: '/home',
+  letter_opened: '/mailbox',
+  letter_sent: '/mailbox',
+  letter_arrived: '/mailbox',
+  matching_open: '/category?mode=change',
+  letter_unread_reminder: '/mailbox',
+  letter_reply_reminder: '/mailbox',
+  matching_no_letter: '/compose',
+  category_reminder: '/category?mode=change',
+}
+
+function getNotificationUrl(item: AppNotification): string {
+  const url = item.payload?.url
+  if (url && url !== '/') return url
+  return NOTIFICATION_URLS[item.type] ?? '/home'
 }
 
 function formatNotificationTime(value: string | null): string {
@@ -360,6 +381,12 @@ export default function HomePage() {
   async function handleClearNotifications() {
     await fetch('/api/notifications', { method: 'DELETE' })
     setNotifications([])
+  }
+
+  async function handleDeleteNotification(id: string) {
+    // UI에서 먼저 제거해 즉시 사라지게 한 뒤 서버에서도 삭제
+    setNotifications((prev) => prev.filter((item) => item.id !== id))
+    await fetch(`/api/notifications?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
   }
 
   // 테스트 모드: 매초 업데이트 (운영 모드에선 60_000으로 변경)
@@ -740,7 +767,7 @@ export default function HomePage() {
                   <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
                 </svg>
                 {notifications.length > 0 && (
-                  <span className="absolute -top-[8px] -left-[10px] min-w-[15px] h-[15px] px-[3px] rounded-full bg-[#D87858] text-white font-mono text-[8px] font-bold flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.25)]">
+                  <span className="absolute -top-[8px] -left-[15px] min-w-[15px] h-[15px] px-[3px] rounded-full bg-[#D87858] text-white font-mono text-[8px] font-bold flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.25)]">
                     {notifications.length > 99 ? '99+' : notifications.length}
                   </span>
                 )}
@@ -950,12 +977,36 @@ export default function HomePage() {
                   notifications.map((item) => {
                     const { title, message } = getNotificationText(item)
                     return (
-                      <div key={item.id} className="rounded-[12px] bg-white/75 border border-[#E0D9C7] px-3 py-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-[13px] font-semibold leading-[1.35]">{title}</p>
-                          <span className="font-mono text-[9.5px] opacity-55 shrink-0">{formatNotificationTime(item.created_at)}</span>
-                        </div>
-                        {message && <p className="mt-1 text-[12px] leading-[1.45] text-[#5C544A]">{message}</p>}
+                      <div
+                        key={item.id}
+                        className="relative flex items-stretch rounded-[12px] bg-white/75 border border-[#E0D9C7] transition active:scale-[0.98] hover:bg-white"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // 클릭한 알림은 삭제 후 해당 화면으로 이동
+                            void handleDeleteNotification(item.id)
+                            setNotificationsOpen(false)
+                            router.push(getNotificationUrl(item))
+                          }}
+                          className="flex-1 text-left px-3 py-3 pr-8"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-[13px] font-semibold leading-[1.35]">{title}</p>
+                            <span className="font-mono text-[9.5px] opacity-55 shrink-0">{formatNotificationTime(item.created_at)}</span>
+                          </div>
+                          {message && <p className="mt-1 text-[12px] leading-[1.45] text-[#5C544A]">{message}</p>}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteNotification(item.id)}
+                          aria-label="알림 삭제"
+                          className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full text-[#9A8F7E] hover:bg-[#EFE7D6] hover:text-[#5C544A]"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                            <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" />
+                          </svg>
+                        </button>
                       </div>
                     )
                   })
