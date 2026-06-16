@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import Btn from '@/components/Btn'
 import Field from '@/components/Field'
 import {
@@ -12,6 +12,14 @@ import {
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignupAgePage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupAgeForm />
+    </Suspense>
+  )
+}
+
+function SignupAgeForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [birthDate, setBirthDate] = useState('')
