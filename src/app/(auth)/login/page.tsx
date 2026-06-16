@@ -6,6 +6,7 @@ import Flower from '@/components/Flower'
 import Field from '@/components/Field'
 import Btn from '@/components/Btn'
 import { useState } from 'react'
+import { KAKAO_SIGNUP_SCOPES } from '@/lib/ageVerification'
 import { getSiteUrl } from '@/lib/auth/url'
 import { createClient } from '@/lib/supabase/client'
 
@@ -42,6 +43,7 @@ export default function LoginPage() {
       provider: 'kakao',
       options: {
         redirectTo: getSiteUrl('/api/auth/callback?next=/home'),
+        scopes: KAKAO_SIGNUP_SCOPES,
       },
     })
     setLoading(false)

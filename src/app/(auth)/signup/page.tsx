@@ -1,13 +1,15 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Btn from '@/components/Btn'
 import Field from '@/components/Field'
 import {
   AGE_RESTRICTION_MESSAGE,
-  calculateInternationalAge,
+  AGE_VERIFICATION_REQUIRED_MESSAGE,
+  KAKAO_SIGNUP_SCOPES,
+  calculateAnnualAge,
   getEligibleSignupAge,
 } from '@/lib/ageVerification'
 import { getSiteUrl } from '@/lib/auth/url'
@@ -15,7 +17,6 @@ import { createClient } from '@/lib/supabase/client'
 
 export default function SignupPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
   const [birthDate, setBirthDate] = useState('')
@@ -24,14 +25,23 @@ export default function SignupPage() {
 
   const showSignupAgeError = () => {
     setError(AGE_RESTRICTION_MESSAGE)
-    window.alert(AGE_RESTRICTION_MESSAGE)
   }
 
   useEffect(() => {
-    if (searchParams.get('age_error') === '1') {
-      showSignupAgeError()
-    }
-  }, [searchParams])
+    const params = new URLSearchParams(window.location.search)
+    const authError = params.get('auth_error')
+    const message =
+      params.get('age_error') === '1' || authError === 'age_restricted'
+        ? AGE_RESTRICTION_MESSAGE
+        : authError === 'age_verification_required'
+          ? AGE_VERIFICATION_REQUIRED_MESSAGE
+          : null
+
+    if (!message) return
+
+    const timer = window.setTimeout(() => setError(message), 0)
+    return () => window.clearTimeout(timer)
+  }, [])
 
   const handleSignup = async () => {
     setError(null)
@@ -70,7 +80,6 @@ export default function SignupPage() {
       id: userId,
       nickname_set: false,
       age,
-      birth_date: birthDate,
       created_at: new Date().toISOString(),
     })
     setLoading(false)
@@ -91,6 +100,7 @@ export default function SignupPage() {
       provider: 'kakao',
       options: {
         redirectTo: getSiteUrl('/api/auth/callback?next=/onboarding'),
+        scopes: KAKAO_SIGNUP_SCOPES,
       },
     })
     setLoading(false)
@@ -99,6 +109,8 @@ export default function SignupPage() {
       setError('카카오 회원가입에 실패했어요. 잠시 후 다시 시도해주세요.')
     }
   }
+
+  const annualAge = birthDate ? calculateAnnualAge(birthDate) : null
 
   return (
     <div className="min-h-dvh bg-[#F5F0E6] flex items-center justify-center px-6 py-12">
@@ -123,9 +135,9 @@ export default function SignupPage() {
         <div className="mt-6 flex flex-col gap-[10px]">
           <Field placeholder="이메일" type="email" value={email} onChange={e => setEmail(e.target.value)} />
           <Field placeholder="비밀번호 (6자 이상)" type="password" value={pw} onChange={e => setPw(e.target.value)} />
-          <Field placeholder="생년월일" type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
-          {birthDate && calculateInternationalAge(birthDate) !== null && (
-            <p className="text-[12px] text-[#5C544A] mt-1">만 {calculateInternationalAge(birthDate)}세</p>
+          <Field placeholder="생년월일 (YYYY-MM-DD)" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
+          {annualAge !== null && (
+            <p className="text-[12px] text-[#5C544A] mt-1">연 나이 {annualAge}세</p>
           )}
           {error && (
             <p className="text-[12px] text-red-600 mt-1">{error}</p>
