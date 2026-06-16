@@ -8,10 +8,10 @@ import Field from '@/components/Field'
 import {
   AGE_RESTRICTION_MESSAGE,
   AGE_VERIFICATION_REQUIRED_MESSAGE,
-  KAKAO_SIGNUP_SCOPES,
   calculateAnnualAge,
   getEligibleSignupAge,
 } from '@/lib/ageVerification'
+import { KAKAO_OAUTH_SCOPES } from '@/lib/auth/kakao'
 import { getSiteUrl } from '@/lib/auth/url'
 import { createClient } from '@/lib/supabase/client'
 
@@ -100,7 +100,7 @@ export default function SignupPage() {
       provider: 'kakao',
       options: {
         redirectTo: getSiteUrl('/api/auth/callback?next=/onboarding'),
-        scopes: KAKAO_SIGNUP_SCOPES,
+        scopes: KAKAO_OAUTH_SCOPES,
       },
     })
     setLoading(false)
