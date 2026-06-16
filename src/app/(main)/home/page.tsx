@@ -276,6 +276,7 @@ export default function HomePage() {
   const [data, setData] = useState<HomeData | null>(null)
   const [loading, setLoading] = useState(true)
   const [loggingOut, setLoggingOut] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [notificationsLoading, setNotificationsLoading] = useState(false)
@@ -300,6 +301,31 @@ export default function HomePage() {
     const supabase = createClient()
     await supabase.auth.signOut()
     router.replace('/login')
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleting || loggingOut) return
+    const confirmed = window.confirm(
+      '정말 탈퇴하시겠어요?\n\n계정과 회원가입 정보가 즉시 삭제되며 되돌릴 수 없어요.\n(주고받은 편지는 상대방을 위해 "탈퇴한 사용자"로 남아요.)'
+    )
+    if (!confirmed) return
+
+    setDeleting(true)
+    try {
+      const res = await fetch('/api/profile/delete', { method: 'POST' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => null) as { error?: string } | null
+        window.alert(`탈퇴 처리 중 오류가 발생했어요: ${body?.error ?? res.status}`)
+        setDeleting(false)
+        return
+      }
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      router.replace('/login')
+    } catch {
+      window.alert('탈퇴 처리 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.')
+      setDeleting(false)
+    }
   }
 
   function getNotificationText(item: AppNotification) {
@@ -731,15 +757,26 @@ export default function HomePage() {
               </button>
             )}
           </div>
-          <button
-            onClick={handleLogout}
-            disabled={loggingOut}
-            aria-label="로그아웃"
-            className="font-mono text-[11px] tracking-[0.08em] opacity-85 hover:opacity-100 transition-opacity disabled:opacity-40"
-            style={{ color: textColor, textShadow, background: 'transparent', border: 'none', cursor: 'pointer' }}
-          >
-            {loggingOut ? '로그아웃 중…' : '로그아웃'}
-          </button>
+          <div className="flex items-center gap-[10px]">
+            <button
+              onClick={handleLogout}
+              disabled={loggingOut || deleting}
+              aria-label="로그아웃"
+              className="font-mono text-[11px] tracking-[0.08em] opacity-85 hover:opacity-100 transition-opacity disabled:opacity-40"
+              style={{ color: textColor, textShadow, background: 'transparent', border: 'none', cursor: 'pointer' }}
+            >
+              {loggingOut ? '로그아웃 중…' : '로그아웃'}
+            </button>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deleting || loggingOut}
+              aria-label="회원 탈퇴"
+              className="font-mono text-[11px] tracking-[0.08em] opacity-60 hover:opacity-100 transition-opacity disabled:opacity-40"
+              style={{ color: textColor, textShadow, background: 'transparent', border: 'none', cursor: 'pointer' }}
+            >
+              {deleting ? '탈퇴 중…' : '탈퇴'}
+            </button>
+          </div>
         </div>
         {push.error && (
           <p className="px-6 font-mono text-[10px] text-red-500 -mt-1" style={{ transform: 'translateY(10px)' }}>{push.error}</p>
