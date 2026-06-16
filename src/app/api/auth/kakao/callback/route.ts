@@ -1,10 +1,4 @@
 import { NextResponse } from 'next/server'
-import {
-  getKakaoBirthInfoFromMetadataSources,
-  getMetadataSources,
-  isAllowedSignupAge,
-  calculateAnnualAgeFromBirthYear,
-} from '@/lib/ageVerification'
 import { getSiteOrigin } from '@/lib/auth/url'
 import { createClient } from '@/lib/supabase/server'
 
@@ -21,6 +15,7 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get('code')
   const next = requestUrl.searchParams.get('next')
   const origin = getSiteOrigin(request)
+  const nextPath = next?.startsWith('/') && !next.startsWith('//') ? next : null
 
   if (!code) {
     return NextResponse.redirect(new URL('/login?auth_error=missing_code', origin))
@@ -48,25 +43,12 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/login?auth_error=profile', origin))
   }
 
-  const profileAge = readProfileAge(profile?.age)
-  const { birthYear } = getKakaoBirthInfoFromMetadataSources(getMetadataSources(user))
-  const kakaoAge = birthYear ? calculateAnnualAgeFromBirthYear(birthYear) : null
-  const ageToCheck = kakaoAge ?? profileAge
-
-  if (ageToCheck === null) {
-    await supabase.auth.signOut()
-    return NextResponse.redirect(new URL('/signup?auth_error=age_verification_required', origin))
-  }
-
-  if (!isAllowedSignupAge(ageToCheck)) {
-    await supabase.auth.signOut()
-    return NextResponse.redirect(new URL('/signup?auth_error=age_restricted', origin))
-  }
+  const needsAgeVerification = readProfileAge(profile?.age) === null
 
   if (profile) {
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ email: user.email ?? null, age: ageToCheck })
+      .update({ email: user.email ?? null })
       .eq('id', user.id)
 
     if (updateError) {
@@ -78,7 +60,6 @@ export async function GET(request: Request) {
       id: user.id,
       email: user.email ?? null,
       nickname_set: false,
-      age: ageToCheck,
       created_at: new Date().toISOString(),
     })
 
@@ -87,8 +68,14 @@ export async function GET(request: Request) {
     }
   }
 
-  if (next?.startsWith('/') && !next.startsWith('//')) {
-    return NextResponse.redirect(new URL(profile?.nickname && profile.nickname_set ? next : '/onboarding', origin))
+  if (needsAgeVerification) {
+    const ageUrl = new URL('/signup/age', origin)
+    if (nextPath) ageUrl.searchParams.set('next', nextPath)
+    return NextResponse.redirect(ageUrl)
+  }
+
+  if (nextPath) {
+    return NextResponse.redirect(new URL(profile?.nickname && profile.nickname_set ? nextPath : '/onboarding', origin))
   }
 
   const destination =

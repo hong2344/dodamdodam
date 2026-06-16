@@ -1,10 +1,4 @@
 import { NextResponse } from 'next/server'
-import {
-  calculateAnnualAgeFromBirthYear,
-  getKakaoBirthInfoFromMetadataSources,
-  getMetadataSources,
-  isAllowedSignupAge,
-} from '@/lib/ageVerification'
 import { getSiteOrigin } from '@/lib/auth/url'
 import { createClient } from '@/lib/supabase/server'
 
@@ -43,25 +37,14 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/login?error=profile', origin))
   }
 
-  const profileAge = readProfileAge(profile?.age)
-  const { birthYear } = getKakaoBirthInfoFromMetadataSources(getMetadataSources(data.user))
-  const kakaoAge = birthYear ? calculateAnnualAgeFromBirthYear(birthYear) : null
-  const ageToCheck = kakaoAge ?? profileAge
-
-  if (ageToCheck === null) {
-    await supabase.auth.signOut()
-    return NextResponse.redirect(new URL('/signup?auth_error=age_verification_required', origin))
-  }
-
-  if (!isAllowedSignupAge(ageToCheck)) {
-    await supabase.auth.signOut()
-    return NextResponse.redirect(new URL('/signup?auth_error=age_restricted', origin))
-  }
+  const provider = data.user.app_metadata?.provider
+  const isKakaoUser = provider === 'kakao'
+  const needsAgeVerification = isKakaoUser && readProfileAge(profile?.age) === null
 
   if (profile) {
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ email: data.user.email ?? null, age: ageToCheck })
+      .update({ email: data.user.email ?? null })
       .eq('id', data.user.id)
 
     if (updateError) {
@@ -72,13 +55,18 @@ export async function GET(request: Request) {
       id: data.user.id,
       email: data.user.email ?? null,
       nickname_set: false,
-      age: ageToCheck,
       created_at: new Date().toISOString(),
     })
 
     if (insertError) {
       return NextResponse.redirect(new URL('/login?error=profile', origin))
     }
+  }
+
+  if (needsAgeVerification) {
+    const ageUrl = new URL('/signup/age', origin)
+    ageUrl.searchParams.set('next', next)
+    return NextResponse.redirect(ageUrl)
   }
 
   return NextResponse.redirect(new URL(profile?.nickname && profile.nickname_set ? next : '/onboarding', origin))

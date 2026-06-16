@@ -1,8 +1,8 @@
 export const MIN_SIGNUP_AGE = 14
 export const MAX_SIGNUP_AGE = 19
 export const AGE_RESTRICTION_MESSAGE = '연 나이 14~19세(중고등학생)만 가입할 수 있어요.'
-export const AGE_VERIFICATION_REQUIRED_MESSAGE = '카카오 생년 정보 제공에 동의해야 가입할 수 있어요.'
-export const KAKAO_SIGNUP_SCOPES = 'account_email profile_nickname birthyear'
+export const AGE_VERIFICATION_REQUIRED_MESSAGE = '생년월일을 입력해야 가입할 수 있어요.'
+export const KAKAO_SIGNUP_SCOPES = 'profile_nickname profile_image account_email friends'
 
 type MetadataRecord = Record<string, unknown>
 
@@ -159,39 +159,37 @@ export function getBirthDateFromKakaoMetadata(metadata: unknown) {
   return null
 }
 
-export function getBirthYearFromKakaoMetadata(metadata: unknown) {
-  if (!isRecord(metadata)) return null
+export function getMetadataSources(user: { user_metadata?: unknown; identities?: { identity_data?: unknown }[] }) {
+  const sources: MetadataRecord[] = []
 
-  const birthyear = parseBirthYear(readStringPath(metadata, BIRTH_YEAR_PATHS))
-  if (birthyear) return birthyear
+  if (isRecord(user.user_metadata)) {
+    sources.push(user.user_metadata)
+  }
 
-  const birthdate = getBirthDateFromKakaoMetadata(metadata)
-  return birthdate ? parseBirthYear(birthdate) : null
-}
-
-export function getKakaoBirthInfoFromMetadataSources(sources: unknown[]) {
-  for (const source of sources) {
-    const birthYear = getBirthYearFromKakaoMetadata(source)
-    if (!birthYear) continue
-
-    return {
-      birthDate: getBirthDateFromKakaoMetadata(source),
-      birthYear,
+  for (const identity of user.identities ?? []) {
+    if (isRecord(identity.identity_data)) {
+      sources.push(identity.identity_data)
     }
   }
 
-  return {
-    birthDate: null,
-    birthYear: null,
-  }
+  return sources
 }
 
-export function getMetadataSources(user: {
-  user_metadata?: unknown
-  identities?: { identity_data?: unknown }[] | null
-}) {
-  return [
-    user.user_metadata,
-    ...(user.identities?.map((identity) => identity.identity_data) ?? []),
-  ]
+export function getKakaoBirthInfoFromMetadataSources(sources: MetadataRecord[]) {
+  for (const source of sources) {
+    const birthDate = getBirthDateFromKakaoMetadata(source)
+    if (birthDate) {
+      const age = getEligibleSignupAge(birthDate)
+      if (age !== null) return { birthDate, age, birthYear: parseBirthYear(birthDate) }
+    }
+
+    const birthYear = parseBirthYear(readStringPath(source, BIRTH_YEAR_PATHS))
+    if (birthYear) {
+      const age = getEligibleSignupAgeFromBirthYear(birthYear)
+      if (age !== null) return { birthDate: null, age, birthYear }
+      return { birthDate: null, age: null, birthYear }
+    }
+  }
+
+  return { birthDate: null, age: null, birthYear: null }
 }

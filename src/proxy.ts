@@ -4,7 +4,8 @@ import { createServerClient } from '@supabase/ssr'
 // 인증 없이 접근 가능한 경로
 const PUBLIC_PATHS = ['/login', '/signup', '/api/auth']
 const NICKNAME_PATH = '/nickname'
-const ONBOARDING_PATHS = ['/onboarding', '/village', '/avatar', '/category', NICKNAME_PATH]
+const SIGNUP_AGE_PATH = '/signup/age'
+const ONBOARDING_PATHS = ['/onboarding', '/village', '/avatar', '/category', NICKNAME_PATH, SIGNUP_AGE_PATH]
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
