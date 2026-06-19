@@ -316,6 +316,24 @@ export default function HomePage() {
     },
   })
 
+  // iOS Safari 일반 탭에서는 웹 푸시가 지원되지 않아 '푸시 켜기' 버튼이 숨겨진다.
+  // 이때만(아이폰 + 미설치) "홈 화면에 추가" 안내를 노출해 사용자 혼란을 줄인다.
+  const [showIosPushHint, setShowIosPushHint] = useState(false)
+  const [iosHintOpen, setIosHintOpen] = useState(false)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (push.isSupported) return // 지원되면 실제 버튼이 보이므로 안내 불필요
+    const ua = window.navigator.userAgent
+    const isIOS =
+      /iP(hone|ad|od)/.test(ua) ||
+      // iPadOS는 데스크톱 Mac으로 위장하므로 터치 지원으로 추가 판별
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    const isStandalone =
+      ('standalone' in navigator && (navigator as { standalone?: boolean }).standalone === true) ||
+      window.matchMedia('(display-mode: standalone)').matches
+    setShowIosPushHint(isIOS && !isStandalone)
+  }, [push.isSupported])
+
   const handleLogout = async () => {
     if (loggingOut) return
     setLoggingOut(true)
@@ -785,6 +803,16 @@ export default function HomePage() {
                 {push.isLoading ? '처리 중…' : push.isSubscribed ? '푸시 끄기' : '푸시 켜기'}
               </button>
             )}
+            {showIosPushHint && (
+              <button
+                onClick={() => setIosHintOpen(true)}
+                aria-label="알림 받는 방법 안내"
+                className="font-mono text-[10px] tracking-[0.08em] opacity-60 hover:opacity-100 transition-opacity"
+                style={{ color: textColor, textShadow, background: 'transparent', border: 'none', cursor: 'pointer' }}
+              >
+                홈 화면 추가 시 알림 ⓘ
+              </button>
+            )}
           </div>
           <button
             onClick={handleLogout}
@@ -1027,6 +1055,54 @@ export default function HomePage() {
                   닫기
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {iosHintOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-5"
+            onClick={() => setIosHintOpen(false)}
+          >
+            <div
+              className="w-full max-w-[340px] max-h-[78dvh] overflow-y-auto rounded-[16px] bg-[#F5F0E6] border border-[#E0D9C7] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.25)] text-[#1A1816]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div>
+                <p className="font-mono text-[10px] tracking-[0.16em] uppercase opacity-55">push notification</p>
+                <h3 className="mt-1 text-[20px] font-semibold">알림 받는 방법</h3>
+              </div>
+
+              <p className="mt-3 text-[13px] leading-[1.5] text-[#5C544A]">
+                아이폰 Safari에서는 화면에 <b>추가</b>한 뒤에만 알림을 받을 수 있어요. 아래 순서대로 한 번만 설정하면 돼요.
+              </p>
+
+              <ol className="mt-4 flex flex-col gap-3">
+                {[
+                  <>Safari 하단 우측의 <b>⋯ 버튼</b>을 눌러 <b>공유 버튼</b>을 눌러요.</>,
+                  <>메뉴를 내려서 <b>&lsquo;홈 화면에 추가&rsquo;</b>를 눌러요.</>,
+                  <>오른쪽 위 <b>&lsquo;추가&rsquo;</b>를 누르면 홈 화면에 도담 아이콘이 생겨요.</>,
+                  <>이제 <b>홈 화면의 도담 아이콘</b>으로 다시 열면 <b>&lsquo;푸시 켜기&rsquo;</b> 버튼이 나타나요. 눌러서 허용하면 끝!</>,
+                ].map((step, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <span className="mt-[1px] flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#00643E] text-white font-mono text-[11px] font-bold">
+                      {i + 1}
+                    </span>
+                    <span className="text-[13px] leading-[1.5]">{step}</span>
+                  </li>
+                ))}
+              </ol>
+
+              <p className="mt-4 rounded-[10px] bg-[#EFE7D6] px-3 py-2 text-[11px] leading-[1.5] text-[#5C544A]">
+                ※ 아이폰은 iOS 16.4 이상에서만 알림이 지원돼요. (설정 &gt; 일반 &gt; 정보에서 확인)
+              </p>
+
+              <button
+                onClick={() => setIosHintOpen(false)}
+                className="mt-4 h-[42px] w-full rounded-[12px] bg-[#00643E] text-white text-[13px] font-semibold"
+              >
+                알겠어요
+              </button>
             </div>
           </div>
         )}
