@@ -114,23 +114,58 @@ export function usePushNotification(
     return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
   }, []);
 
-  // 마운트 시 이미 등록된 구독이 있으면 상태에 반영(새로고침 후에도 켜짐/꺼짐 유지)
+  // 현재 브라우저 구독을 서버 DB에 저장(upsert). 엔드포인트가 갱신돼도 DB가 최신을 가리키게 한다.
+  const persistSubscription = useCallback(async (sub: PushSubscription) => {
+    const token =
+      optionsRef.current.accessToken ?? (await optionsRef.current.getAccessToken?.()) ?? null;
+    await fetch(optionsRef.current.subscribeUrl || DEFAULT_SUBSCRIBE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(sub),
+    });
+  }, []);
+
+  // 마운트 시: 권한이 허용돼 있으면 현재 구독을 서버에 재동기화한다.
+  // 브라우저 푸시 구독(엔드포인트)은 시간이 지나면 갱신/만료되는데, 사용자가 '켜기'를 다시 누르지
+  // 않으면 DB엔 옛 엔드포인트가 남아 푸시가 죽은 곳으로 가버린다. 매 로드마다 동기화해 이를 막는다.
+  // (구독이 사라졌지만 권한은 남아 있으면 조용히 재구독한다 — granted 상태에선 프롬프트가 뜨지 않는다.)
   useEffect(() => {
     if (!isSupported) return;
     let cancelled = false;
     (async () => {
       try {
         const registration = await registerAndWaitForActiveServiceWorker();
-        const existing = registration ? await registration.pushManager.getSubscription() : null;
+        let existing = await registration.pushManager.getSubscription();
+
+        if (Notification.permission === 'granted') {
+          if (!existing) {
+            const applicationServerKey =
+              optionsRef.current.applicationServerKey || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+            if (applicationServerKey) {
+              existing = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(applicationServerKey),
+              });
+            }
+          }
+          if (existing) {
+            // DB에 현재 엔드포인트를 최신으로 유지(실패해도 상태 반영은 계속)
+            await persistSubscription(existing).catch(() => undefined);
+          }
+        }
+
         if (!cancelled) setSubscription(existing);
       } catch {
-        // 조회 실패는 조용히 무시 (버튼은 '켜기' 상태로 둠)
+        // 조회/동기화 실패는 조용히 무시 (버튼은 '켜기' 상태로 둠)
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [isSupported]);
+  }, [isSupported, persistSubscription]);
 
   const requestPermissionAndSubscribe = useCallback(async () => {
     setError(null);
