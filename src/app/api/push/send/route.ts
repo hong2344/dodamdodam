@@ -12,7 +12,8 @@ type PushEventType =
   | 'matching_open'
   | 'letter_unread_reminder'
   | 'letter_reply_reminder'
-  | 'matching_no_letter';
+  | 'matching_no_letter'
+  | 'category_reminder';
 
 type SendPushRequest = {
   userId?: string;
@@ -60,6 +61,10 @@ const PUSH_MESSAGES: Record<PushEventType, { title: string; body?: string }> = {
   matching_no_letter: {
     title: '마음친구가 기다리고 있어요',
     body: '이번 주 친구에게 첫 편지를 보내보세요.',
+  },
+  category_reminder: {
+    title: '새로운 친구를 만날 시간이에요',
+    body: '관심사를 설정하면 이번 주 마음친구를 만날 수 있어요.',
   },
 };
 
